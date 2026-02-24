@@ -1,0 +1,220 @@
+rules:
+  - id: Memory-Allocation-with-Excessive-Size-Value
+    meta:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-789: Memory Allocation with Excessive Size Value"
+        - "CWE-1325: Improperly Controlled Allocation on the Heap"
+      vulnerability_class:
+        - Memory Issues
+      owasp:
+        - A06:2021 - Vulnerable and Outdated Components
+      references:
+        - https://cwe.mitre.org/data/definitions/789.html
+        - https://cwe.mitre.org/data/definitions/1325.html
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: ERROR
+    message: >
+      Memory allocation with excessive or untrusted size value detected. The 
+      allocation size may come from an untrusted source without proper validation, 
+      allowing attackers to cause resource exhaustion or integer overflow.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: malloc(atoi(argv[$IDX]))
+              - pattern: malloc(atol(argv[$IDX]))
+              - pattern: malloc(strtol(argv[$IDX], ...))
+              - pattern: malloc(strtoul(argv[$IDX], ...))
+              - pattern: malloc(strtoll(argv[$IDX], ...))
+              - pattern: malloc(strtoull(argv[$IDX], ...))
+              - pattern: calloc(atoi(argv[$IDX]), ...)
+              - pattern: calloc(atol(argv[$IDX]), ...)
+              - pattern: calloc(strtol(argv[$IDX], ...), ...)
+              - pattern: calloc(..., atoi(argv[$IDX]))
+              - pattern: calloc(..., atol(argv[$IDX]))
+              - pattern: calloc(..., strtol(argv[$IDX], ...))
+              - pattern: realloc($PTR, atoi(argv[$IDX]))
+              - pattern: realloc($PTR, atol(argv[$IDX]))
+              - pattern: realloc($PTR, strtol(argv[$IDX], ...))
+          - pattern-not: malloc(sizeof(...))
+          - pattern-not: calloc($NUM, sizeof(...))
+          - pattern-not: realloc($PTR, sizeof(...))
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($SIZE)
+              - pattern: calloc($COUNT, $SIZE)
+              - pattern: realloc($PTR, $SIZE)
+          - pattern-inside: |
+              $SIZE = $READ_FUNC(...);
+              ...
+          - metavariable-regex:
+              metavariable: $READ_FUNC
+              regex: '.*(read|recv|fetch|get|fread|fget|scanf|fscanf).*'
+          - pattern-not: malloc(sizeof(...))
+          - pattern-not: calloc($NUM, sizeof(...))
+          - pattern-not: realloc($PTR, sizeof(...))
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($PTR->$FIELD)
+              - pattern: calloc($COUNT, $PTR->$FIELD)
+              - pattern: calloc($PTR->$FIELD, ...)
+              - pattern: realloc($PTR, $PTR2->$FIELD)
+          - metavariable-regex:
+              metavariable: $FIELD
+              regex: '.*(size|count|len|width|height|depth|data_size|packet_size|item_size|user_count|session_size).*'
+          - pattern-not: malloc(sizeof(...))
+          - pattern-not: calloc($NUM, sizeof(...))
+          - pattern-not: realloc($PTR, sizeof(...))
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($ARRAY[$INDEX])
+              - pattern: calloc($ARRAY[$INDEX], ...)
+              - pattern: calloc(..., $ARRAY[$INDEX])
+              - pattern: realloc($PTR, $ARRAY[$INDEX])
+          - pattern-not: malloc(sizeof(...))
+          - pattern-not: calloc($NUM, sizeof(...))
+          - pattern-not: realloc($PTR, sizeof(...))
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($SIZE)
+              - pattern: calloc($COUNT, $SIZE)
+              - pattern: realloc($PTR, $SIZE)
+          - pattern-inside: |
+              void $FUNC(..., $TYPE $SIZE, ...) {
+                ...
+              }
+          - pattern-not: malloc(sizeof(...))
+          - pattern-not: calloc($NUM, sizeof(...))
+          - pattern-not: realloc($PTR, sizeof(...))
+      - patterns:
+          - pattern-either:
+              - pattern: new $TYPE[$SIZE]
+              - pattern: new $TYPE[atoi(argv[$IDX])]
+              - pattern: new $TYPE[atol(argv[$IDX])]
+              - pattern: new $TYPE[strtol(argv[$IDX], ...)]
+          - pattern-inside: |
+              void $FUNC(..., $TYPE $SIZE, ...) {
+                ...
+              }
+          - pattern-not: new $TYPE[sizeof(...)]
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($A * $B)
+              - pattern: malloc($A * $B * $C)
+              - pattern: calloc($A, $B)
+              - pattern: new $TYPE[$A * $B]
+              - pattern: new $TYPE[$A * $B * $C]
+          - pattern-not: malloc(sizeof(...) * $NUM)
+          - pattern-not: malloc($NUM * sizeof(...))
+          - pattern-not: calloc($NUM, sizeof(...))
+          - pattern-not: new $TYPE[sizeof(...) * $NUM]
+      - patterns:
+          - pattern-either:
+              - pattern: $PTR = malloc($SIZE);
+              - pattern: $PTR = calloc($COUNT, $SIZE);
+              - pattern: $PTR = realloc($OLD, $SIZE);
+          - pattern-not-inside: |
+              $PTR = malloc($SIZE);
+              ...
+              if ($PTR == NULL) { ... }
+          - pattern-not-inside: |
+              $PTR = malloc($SIZE);
+              ...
+              if (!$PTR) { ... }
+          - pattern-not-inside: |
+              $PTR = malloc($SIZE);
+              ...
+              if (NULL == $PTR) { ... }
+          - pattern-not-inside: |
+              $PTR = calloc($COUNT, $SIZE);
+              ...
+              if ($PTR == NULL) { ... }
+          - pattern-not-inside: |
+              $PTR = calloc($COUNT, $SIZE);
+              ...
+              if (!$PTR) { ... }
+          - pattern-not-inside: |
+              $PTR = calloc($COUNT, $SIZE);
+              ...
+              if (NULL == $PTR) { ... }
+          - pattern-not-inside: |
+              $PTR = realloc($OLD, $SIZE);
+              ...
+              if ($PTR == NULL) { ... }
+          - pattern-not-inside: |
+              $PTR = realloc($OLD, $SIZE);
+              ...
+              if (!$PTR) { ... }
+          - pattern-not-inside: |
+              $PTR = realloc($OLD, $SIZE);
+              ...
+              if (NULL == $PTR) { ... }
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($SIZE)
+              - pattern: calloc($COUNT, $SIZE)
+              - pattern: realloc($PTR, $SIZE)
+          - pattern-inside: |
+              $SIZE = atoi($INPUT);
+              ...
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($SIZE)
+              - pattern: calloc($COUNT, $SIZE)
+              - pattern: realloc($PTR, $SIZE)
+          - pattern-inside: |
+              $SIZE = atol($INPUT);
+              ...
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($SIZE)
+              - pattern: calloc($COUNT, $SIZE)
+              - pattern: realloc($PTR, $SIZE)
+          - pattern-inside: |
+              $SIZE = strtol($INPUT, ...);
+              ...
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($SIZE)
+              - pattern: calloc($COUNT, $SIZE)
+              - pattern: realloc($PTR, $SIZE)
+          - pattern-inside: |
+              $SIZE = strtoul($INPUT, ...);
+              ...
+      - patterns:
+          - pattern-either:
+              - pattern: malloc($SIZE)
+              - pattern: calloc($COUNT, $SIZE)
+              - pattern: realloc($PTR, $SIZE)
+          - pattern-inside: |
+              sscanf($INPUT, "...", &$SIZE);
+              ...
+      - patterns:
+          - pattern-either:
+              - pattern: $TYPE $VAR[$SIZE];
+              - pattern: $TYPE $VAR[$A * $B];
+              - pattern: $TYPE $VAR[$A * $B * $C];
+          - pattern-not: $TYPE $VAR[sizeof(...)];
+          - pattern-not: $TYPE $VAR[<... const ...>];
+      - patterns:
+          - pattern-either:
+              - pattern: alloca($SIZE)
+              - pattern: _malloca($SIZE)
+          - pattern-not: alloca(sizeof(...))
+          - pattern-not: _malloca(sizeof(...))
+      - patterns:
+          - pattern-either:
+              - pattern: alloca($A * $B)
+              - pattern: _malloca($A * $B)
+          - pattern-not: alloca(sizeof(...) * $NUM)
+          - pattern-not: _malloca(sizeof(...) * $NUM)
+      - patterns:
+          - pattern: realloc($PTR, $SIZE)
+          - pattern-not: realloc($PTR, sizeof(...))

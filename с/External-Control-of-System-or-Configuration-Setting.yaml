@@ -1,0 +1,94 @@
+rules:
+  - id: External-Control-of-System-or-Configuration-Setting
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-15: External Control of System or Configuration Setting"
+      vulnerability_class:
+        - Configuration Issues
+      references:
+        - https://cwe.mitre.org/data/definitions/15.html
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: WARNING
+    message: >-
+      External control of system or configuration setting detected. The program
+      uses externally-influenced input to modify system settings without proper
+      validation. This could allow an attacker to manipulate system behavior,
+      escalate privileges, or execute arbitrary commands. Validate and sanitize
+      all inputs before using them in sensitive operations.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $STRUCT->$FIELD = $SRC
+              - pattern: $STRUCT.$FIELD = $SRC
+          - metavariable-regex:
+              metavariable: $FIELD
+              regex: '.*(env|path|dir|name|user|home|config|conf|setting|option|perm).*'
+          - pattern-inside: |
+              $SRC = argv[$IDX];
+              ...
+      - patterns:
+          - pattern-either:
+              - pattern: $STRUCT->$FIELD = $SRC
+              - pattern: $STRUCT.$FIELD = $SRC
+          - metavariable-regex:
+              metavariable: $FIELD
+              regex: '.*(env|path|dir|name|user|home|config|conf|setting|option|perm).*'
+          - pattern-inside: |
+              if (argc >= $NUM) {
+                ...
+              }
+          - pattern: $SRC = argv[$IDX]
+      - patterns:
+          - pattern: setenv($KEY, $VAL, $OVERWRITE)
+          - pattern-not: setenv("...", "...", ...)
+      - patterns:
+          - pattern: putenv($STR)
+          - pattern-not: putenv("...")
+      - patterns:
+          - pattern: system($CMD)
+          - pattern-not: system("...")
+      - patterns:
+          - pattern: popen($CMD, $MODE)
+          - pattern-not: popen("...", ...)
+      - patterns:
+          - pattern: $EXEC_FUNC($PATH, ...)
+          - metavariable-regex:
+              metavariable: $EXEC_FUNC
+              regex: '(execl|execv|execle|execve|execlp|execvp)'
+          - pattern-not: $EXEC_FUNC("/...", ...)
+      - patterns:
+          - pattern: chmod($PATH, $MODE)
+          - pattern-not: chmod("/...", ...)
+      - patterns:
+          - pattern: chown($PATH, $OWNER, $GROUP)
+          - pattern-not: chown("/...", ...)
+      - patterns:
+          - pattern: mount($SOURCE, $TARGET, $FSTYPE, ...)
+          - pattern-not: mount("/...", "/...", "...", ...)
+      - patterns:
+          - pattern: umount($TARGET)
+          - pattern-not: umount("/...")
+      - patterns:
+          - pattern: $VAR = strtol(argv[$IDX], ...)
+          - pattern-inside: |
+              $STRUCT->$FIELD = $VAR;
+              ...
+          - metavariable-regex:
+              metavariable: $FIELD
+              regex: '.*(perm|mode|flag|option).*'
+      - patterns:
+          - pattern: snprintf($BUF, $SIZE, "...%s...", $SRC)
+          - pattern-inside: |
+              $SENSITIVE_FUNC($BUF, ...)
+              ...
+          - metavariable-regex:
+              metavariable: $SENSITIVE_FUNC
+              regex: '(system|popen|execl|execv|execle|execve|execlp|execvp)'

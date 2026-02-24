@@ -1,0 +1,161 @@
+rules:
+  - id: Relative-Path-Traversal
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-23: Relative Path Traversal"
+      vulnerability_class:
+        - Path Traversal
+      owasp:
+        - A01:2021 - Broken Access Control
+      references:
+        - https://cwe.mitre.org/data/definitions/23.html
+        - https://owasp.org/www-community/attacks/Path_Traversal
+        - https://www.sei.cmu.edu/downloads/sei-cert-c-coding-standard-2016-v01.pdf
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: WARNING
+    message: >
+      Untrusted input is used in a file path operation without proper validation.
+      An attacker can use sequences like '../' to access files outside the intended
+      directory, potentially leading to unauthorized file access or code execution.
+      Validate and sanitize all path components before use.
+    pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: fopen($PATH, ...)
+        - pattern: freopen($PATH, ...)
+        - pattern: _wfopen($PATH, ...)
+        - pattern: open($PATH, ...)
+        - pattern: _open($PATH, ...)
+        - pattern: _wopen($PATH, ...)
+        - pattern: creat($PATH, ...)
+        - pattern: CreateFileA($PATH, ...)
+        - pattern: CreateFileW($PATH, ...)
+        - pattern: DeleteFileA($PATH, ...)
+        - pattern: DeleteFileW($PATH, ...)
+        - pattern: remove($PATH, ...)
+        - pattern: RemoveFile($PATH, ...)
+        - pattern: access($PATH, ...)
+        - pattern: _access($PATH, ...)
+        - pattern: stat($PATH, ...)
+        - pattern: lstat($PATH, ...)
+        - pattern: _stat($PATH, ...)
+        - pattern: _wstat($PATH, ...)
+        - pattern: chdir($PATH)
+        - pattern: _chdir($PATH)
+        - pattern: _wchdir($PATH)
+        - pattern: SetCurrentDirectoryA($PATH)
+        - pattern: SetCurrentDirectoryW($PATH)
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(L"...", ...)
+      - pattern-not: $FUNC(CONST_..., ...)
+      - pattern-not: $FUNC(MACRO_..., ...)
+      - pattern-not: $FUNC(TRUSTED_..., ...)
+      - pattern-not: $FUNC(CONFIG_..., ...)
+      - pattern-not: $FUNC(DATA_..., ...)
+    - patterns:
+      - pattern-either:
+        - pattern: rename($OLD, $NEW)
+        - pattern: std::filesystem::rename($OLD, $NEW)
+      - pattern-not: rename("...", "...")
+      - pattern-not: rename("...", CONST_...)
+      - pattern-not: rename(CONST_..., "...")
+    - patterns:
+      - pattern-either:
+        - pattern: sprintf($BUF, $FMT, $INPUT, ...)
+        - pattern: snprintf($BUF, $SIZE, $FMT, $INPUT, ...)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+      - pattern-not: sprintf($BUF, "...", "...")
+      - pattern-not: sprintf($BUF, "...", CONST_...)
+      - pattern-not: snprintf($BUF, $SIZE, "...", "...")
+      - pattern-not: snprintf($BUF, $SIZE, "...", CONST_...)
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($DEST, $SRC)
+        - pattern: wcscat($DEST, $SRC)
+      - pattern-inside: |
+          char $DEST[...];
+          ...
+      - pattern-not: strcat($DEST, "...")
+      - pattern-not: strcat($DEST, CONST_...)
+      - pattern-not: wcscat($DEST, L"...")
+    - patterns:
+      - pattern-either:
+        - pattern: strcpy($DEST, $SRC)
+        - pattern: wcscpy($DEST, $SRC)
+      - pattern-inside: |
+          char $DEST[...];
+          ...
+      - pattern-not: strcpy($DEST, "...")
+      - pattern-not: strcpy($DEST, CONST_...)
+      - pattern-not: wcscpy($DEST, L"...")
+    - patterns:
+      - pattern-either:
+        - pattern: std::ifstream($PATH, ...)
+        - pattern: std::ofstream($PATH, ...)
+        - pattern: std::fstream($PATH, ...)
+      - pattern-not: std::ifstream("...", ...)
+      - pattern-not: std::ofstream("...", ...)
+      - pattern-not: std::fstream("...", ...)
+      - pattern-not: std::ifstream(CONST_..., ...)
+      - pattern-not: std::ofstream(CONST_..., ...)
+      - pattern-not: std::fstream(CONST_..., ...)
+    - patterns:
+      - pattern-either:
+        - pattern: std::filesystem::exists($PATH)
+        - pattern: std::filesystem::remove($PATH)
+        - pattern: std::filesystem::rename($OLD, $NEW)
+        - pattern: std::filesystem::copy_file($SRC, $DST)
+      - pattern-not: std::filesystem::exists("...")
+      - pattern-not: std::filesystem::remove("...")
+      - pattern-not: std::filesystem::rename("...", "...")
+      - pattern-not: std::filesystem::copy_file("...", "...")
+      - pattern-not: std::filesystem::exists(CONST_...)
+      - pattern-not: std::filesystem::remove(CONST_...)
+    - patterns:
+      - pattern: $VAR = $BASE + "..." + $FILENAME
+      - pattern-not: $VAR = "..." + "..." + "..."
+    - patterns:
+      - pattern: $VAR = $BASE + "/" + $FILENAME
+      - pattern-not: $VAR = "..." + "..." + "..."
+    - patterns:
+      - pattern: fgets($BUF, ...)
+      - pattern-inside: |
+          char $BUF[...];
+          ...
+    - patterns:
+      - pattern: scanf($FMT, $BUF)
+      - pattern-inside: |
+          char $BUF[...];
+          ...
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+    - patterns:
+      - pattern: $PATH = getenv(...)
+      - pattern-not: $PATH = getenv("HOME")
+      - pattern-not: $PATH = getenv("PATH")
+      - pattern-not: $PATH = getenv("TMPDIR")
+    - patterns:
+      - pattern: $FUNC($PATH, ...)
+      - pattern-inside: |
+          $TYPE $PATH = argv[$IDX];
+          ...
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(CONST_..., ...)
+    - patterns:
+      - pattern: $FUNC($PATH, ...)
+      - pattern-inside: |
+          $TYPE $PATH = getenv(...);
+          ...
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(CONST_..., ...)

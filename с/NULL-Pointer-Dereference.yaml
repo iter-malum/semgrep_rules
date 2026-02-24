@@ -1,0 +1,312 @@
+rules:
+  - id: NULL-Pointer-Dereference
+    meta:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-476: NULL Pointer Dereference"
+      vulnerability_class:
+        - Memory Issues
+      owasp:
+        - A06:2021 - Vulnerable and Outdated Components
+      references:
+        - https://cwe.mitre.org/data/definitions/476.html
+        - https://www.sei.cmu.edu/downloads/sei-cert-c-coding-standard-2016-v01.pdf
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: ERROR
+    message: >
+      Potential NULL pointer dereference detected. The pointer may be NULL when
+      dereferenced, which can cause a crash or undefined behavior. Add NULL
+      checks before dereferencing or ensure the pointer is always initialized
+      to a valid value.
+    pattern-either:
+    - patterns:
+      - pattern-inside: |
+          $TYPE *$PTR = NULL;
+          ...
+      - pattern-either:
+        - pattern: $PTR->$FIELD
+        - pattern: $PTR->$FUNC(...)
+        - pattern: $PTR[$INDEX]
+        - pattern: $PTR->$FIELD = $VAL
+        - pattern: $PTR->$FIELD++
+        - pattern: $PTR->$FIELD--
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern-inside: |
+          $TYPE *$PTR = nullptr;
+          ...
+      - pattern-either:
+        - pattern: $PTR->$FIELD
+        - pattern: $PTR->$FUNC(...)
+        - pattern: $PTR[$INDEX]
+        - pattern: $PTR->$FIELD = $VAL
+        - pattern: $PTR->$FIELD++
+        - pattern: $PTR->$FIELD--
+      - pattern-not: if ($PTR != nullptr)
+      - pattern-not: if ($PTR == nullptr)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+    - patterns:
+      - pattern: $PTR = malloc(...);
+      - pattern-inside: |
+          $TYPE *$PTR;
+          ...
+          $PTR = malloc(...);
+          ...
+          $PTR->$FIELD;
+          ...
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern: $PTR = malloc(...);
+      - pattern-inside: |
+          $TYPE *$PTR;
+          ...
+          $PTR = malloc(...);
+          ...
+          $PTR->$FIELD = $VAL;
+          ...
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern: $PTR = malloc(...);
+      - pattern-inside: |
+          $TYPE *$PTR;
+          ...
+          $PTR = malloc(...);
+          ...
+          $FUNC($PTR, ...);
+          ...
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: '^(strcpy|strncpy|strcat|strncat|memcpy|memmove|memset|sprintf|snprintf|strlen|strcmp|strncmp|printf|fprintf|sprintf|scanf|sscanf|fgets|fputs|fscanf|free).*'
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern: $PTR = calloc(...);
+      - pattern-inside: |
+          $TYPE *$PTR;
+          ...
+          $PTR = calloc(...);
+          ...
+          $PTR->$FIELD;
+          ...
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern: $PTR = calloc(...);
+      - pattern-inside: |
+          $TYPE *$PTR;
+          ...
+          $PTR = calloc(...);
+          ...
+          $PTR[$INDEX];
+          ...
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern: $PTR = $FUNC(...);
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: '.*(create|new|alloc|make|get|load|open|read|fetch).*'
+      - pattern-inside: |
+          $TYPE *$PTR;
+          ...
+          $PTR = $FUNC(...);
+          ...
+          $PTR->$FIELD;
+          ...
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern: $PTR = $FUNC(...);
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: '.*(create|new|alloc|make|get|load|open|read|fetch).*'
+      - pattern-inside: |
+          $TYPE *$PTR;
+          ...
+          $PTR = $FUNC(...);
+          ...
+          $PTR->$FIELD = $VAL;
+          ...
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern-inside: |
+          void $F(..., $TYPE *$PTR, ...) {
+            ...
+          }
+      - pattern-either:
+        - pattern: $PTR->$FIELD
+        - pattern: $PTR->$FUNC(...)
+        - pattern: $PTR[$INDEX]
+        - pattern: $PTR->$FIELD = $VAL
+        - pattern: $PTR->$FIELD++
+        - pattern: $PTR->$FIELD--
+        - pattern: $FUNC($PTR, ...)
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+      - pattern-not: assert($PTR != NULL);
+      - pattern-not: assert($PTR);
+    - patterns:
+      - pattern: $ARRAY[$INDEX]->FIELD
+      - pattern-inside: |
+          void $F(..., $TYPE *$ARRAY, ...) {
+            ...
+          }
+      - pattern-not: if ($ARRAY != NULL)
+      - pattern-not: if ($ARRAY == NULL)
+      - pattern-not: if (!$ARRAY)
+      - pattern-not: if ($ARRAY)
+    - patterns:
+      - pattern: $ARRAY[$INDEX]->FIELD
+      - pattern-inside: |
+          $TYPE **$ARRAY;
+          ...
+          $ARRAY[$INDEX]->FIELD;
+          ...
+      - pattern-not: if ($ARRAY != NULL)
+      - pattern-not: if ($ARRAY == NULL)
+      - pattern-not: if (!$ARRAY)
+      - pattern-not: if ($ARRAY)
+    - patterns:
+      - pattern: $ARRAY[$INDEX]->FIELD
+      - pattern-inside: |
+          $TYPE2 *$ARRAY[$SIZE];
+          ...
+          $ARRAY[$INDEX]->FIELD;
+          ...
+      - pattern-not: if ($ARRAY[$INDEX] != NULL)
+      - pattern-not: if ($ARRAY[$INDEX] == NULL)
+      - pattern-not: if (!$ARRAY[$INDEX])
+      - pattern-not: if ($ARRAY[$INDEX])
+    - patterns:
+      - pattern: $PTR1->$FIELD1->$FIELD2
+      - pattern-inside: |
+          void $F(..., $TYPE *$PTR1, ...) {
+            ...
+          }
+      - pattern-not: if ($PTR1 != NULL)
+      - pattern-not: if ($PTR1 == NULL)
+      - pattern-not: if (!$PTR1)
+      - pattern-not: if ($PTR1)
+    - patterns:
+      - pattern: $PTR1->$FIELD1[$INDEX]->FIELD2
+      - pattern-inside: |
+          void $F(..., $TYPE *$PTR1, ...) {
+            ...
+          }
+      - pattern-not: if ($PTR1 != NULL)
+      - pattern-not: if ($PTR1 == NULL)
+      - pattern-not: if (!$PTR1)
+      - pattern-not: if ($PTR1)
+    - patterns:
+      - pattern: $PTR1->$FIELD1[$INDEX]
+      - pattern-inside: |
+          void $F(..., $TYPE *$PTR1, ...) {
+            ...
+          }
+      - pattern-not: if ($PTR1 != NULL)
+      - pattern-not: if ($PTR1 == NULL)
+      - pattern-not: if (!$PTR1)
+      - pattern-not: if ($PTR1)
+    - patterns:
+      - pattern: $PTR->CALLBACK(...)
+      - pattern-inside: |
+          void $F(..., $TYPE *$PTR, ...) {
+            ...
+          }
+      - pattern-not: if ($PTR != NULL)
+      - pattern-not: if ($PTR == NULL)
+      - pattern-not: if (!$PTR)
+      - pattern-not: if ($PTR)
+    - patterns:
+      - pattern: std::shared_ptr<$TYPE> $PTR;
+      - pattern: $PTR->$FIELD
+    - patterns:
+      - pattern: std::unique_ptr<$TYPE> $PTR;
+      - pattern: $PTR->$FIELD
+    - patterns:
+      - pattern: std::shared_ptr<$TYPE> $PTR;
+      - pattern: $PTR->$FUNC(...)
+    - patterns:
+      - pattern: std::unique_ptr<$TYPE> $PTR;
+      - pattern: $PTR->$FUNC(...)
+    - patterns:
+      - pattern: $PTR->get()
+      - pattern-inside: |
+          std::shared_ptr<$TYPE> $PTR;
+          ...
+      - pattern-not: if ($PTR)
+      - pattern-not: if (!$PTR)
+    - patterns:
+      - pattern: $FUNC($DEST, $SRC, ...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: '^(strcpy|strncpy|strcat|strncat|memcpy|memmove|memset|sprintf|snprintf).*'
+      - pattern-inside: |
+          $TYPE *$DEST = NULL;
+          ...
+          $FUNC($DEST, $SRC, ...);
+          ...
+      - pattern-not: if ($DEST != NULL)
+      - pattern-not: if ($DEST == NULL)
+      - pattern-not: if (!$DEST)
+      - pattern-not: if ($DEST)
+    - patterns:
+      - pattern: $FUNC($DEST, $SRC, ...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: '^(strcpy|strncpy|strcat|strncat|memcpy|memmove|memset|sprintf|snprintf|strcmp|strncmp).*'
+      - pattern-inside: |
+          $TYPE *$SRC = NULL;
+          ...
+          $FUNC($DEST, $SRC, ...);
+          ...
+      - pattern-not: if ($SRC != NULL)
+      - pattern-not: if ($SRC == NULL)
+      - pattern-not: if (!$SRC)
+      - pattern-not: if ($SRC)

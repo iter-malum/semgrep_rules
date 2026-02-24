@@ -1,0 +1,88 @@
+rules:
+  - id: arrays-passed-to-functions
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')
+      vulnerability_class:
+        - Memory Issues
+      references:
+        - https://cwe.mitre.org/data/definitions/120.html
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: WARNING
+    message: |
+      '$BUF' is an array or buffer. It's passed to '$FUNC'. 
+      If the function does not receive an explicit size limit, 
+      it may cause buffer over-read or over-write. 
+      Ensure that the function is safe for unbounded input, 
+      or that the size is properly validated/limited.
+    pattern-either:
+      # Stack arrays (fixed size, including VLA)
+      - patterns:
+          - pattern-either:
+              - pattern: $TYPE $BUF[$SIZE] = $EXPR;
+              - pattern: $TYPE $BUF[$SIZE];
+              - pattern: $TYPE $BUF[] = $EXPR;
+              - pattern: $TYPE $BUF[$SIZE1][$SIZE2];
+          - pattern-not-inside: free($BUF);
+          - pattern-not-inside: delete $BUF;
+          - pattern-not-inside: delete[] $BUF;
+          - pattern-not-inside: sizeof($BUF);
+          - metavariable-regex:
+              metavariable: $BUF
+              regex: (?![A-Z0-9_]+\b)
+          - pattern: $FUNC(..., $BUF, ...);
+          - pattern-not: $FUNC(..., $BUF, ...) where $FUNC in (strlen, strnlen, strchr, strrchr, memchr, strstr, strspn, strcspn, strpbrk)
+      # Dynamically allocated buffers (malloc, calloc, realloc)
+      - patterns:
+          - pattern-either:
+              - pattern: $BUF = ($CAST) malloc($SIZE);
+              - pattern: $BUF = ($CAST) calloc($NUM, $SIZE);
+              - pattern: $BUF = ($CAST) realloc($OLD, $SIZE);
+          - pattern-not-inside: free($BUF);
+          - pattern-not-inside: delete $BUF;
+          - pattern-not-inside: delete[] $BUF;
+          - pattern-not-inside: sizeof($BUF);
+          - metavariable-regex:
+              metavariable: $BUF
+              regex: (?![A-Z0-9_]+\b)
+          - pattern: $FUNC(..., $BUF, ...);
+          - pattern-not: $FUNC(..., $BUF, ...) where $FUNC in (strlen, strnlen, strchr, strrchr, memchr, strstr, strspn, strcspn, strpbrk)
+      # C++ new[] arrays
+      - patterns:
+          - pattern: $BUF = new $TYPE[$SIZE];
+          - pattern-not-inside: delete[] $BUF;
+          - metavariable-regex:
+              metavariable: $BUF
+              regex: (?![A-Z0-9_]+\b)
+          - pattern: $FUNC(..., $BUF, ...);
+          - pattern-not: $FUNC(..., $BUF, ...) where $FUNC in (strlen, strnlen, strchr, strrchr, memchr, strstr, strspn, strcspn, strpbrk)
+      # Variable Length Arrays (C99)
+      - patterns:
+          - pattern: $TYPE $BUF[$SIZE];
+          - metavariable-regex:
+              metavariable: $SIZE
+              regex: ^(?!\d+$).*
+          - pattern-not-inside: free($BUF);
+          - metavariable-regex:
+              metavariable: $BUF
+              regex: (?![A-Z0-9_]+\b)
+          - pattern: $FUNC(..., $BUF, ...);
+          - pattern-not: $FUNC(..., $BUF, ...) where $FUNC in (strlen, strnlen, strchr, strrchr, memchr, strstr, strspn, strcspn, strpbrk)
+      # alloca / _malloca
+      - patterns:
+          - pattern-either:
+              - pattern: $BUF = alloca($SIZE);
+              - pattern: $BUF = _malloca($SIZE);
+          - metavariable-regex:
+              metavariable: $BUF
+              regex: (?![A-Z0-9_]+\b)
+          - pattern: $FUNC(..., $BUF, ...);
+          - pattern-not: $FUNC(..., $BUF, ...) where $FUNC in (strlen, strnlen, strchr, strrchr, memchr, strstr, strspn, strcspn, strpbrk)ы

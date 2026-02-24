@@ -1,0 +1,133 @@
+rules:
+  - id: Stack-based-Buffer-Overflow
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-121: Stack-based Buffer Overflow"
+      vulnerability_class:
+        - Memory Issues
+      owasp:
+        - A06:2021 - Vulnerable and Outdated Components
+      references:
+        - https://cwe.mitre.org/data/definitions/121.html
+        - https://www.sei.cmu.edu/downloads/sei-cert-c-coding-standard-2016-v01.pdf
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: ERROR
+    message: >
+      Potential stack-based buffer overflow: function may write beyond the bounds
+      of stack-allocated buffer. Use bounded functions (strncpy, snprintf) with
+      proper size checks, or prefer safer alternatives.
+    pattern-either:
+    - pattern: gets($BUF)
+    - patterns:
+      - pattern-either:
+        - pattern: strcpy($BUF, $SRC)
+        - pattern: std::strcpy($BUF, $SRC)
+      - pattern-not: strcpy($BUF, "...")
+      - pattern-not: std::strcpy($BUF, "...")
+      - pattern-not: strcpy($BUF, $BUF)
+    - patterns:
+      - pattern-either:
+        - pattern: wcscpy($BUF, $SRC)
+        - pattern: std::wcscpy($BUF, $SRC)
+      - pattern-not: wcscpy($BUF, L"...")
+      - pattern-not: std::wcscpy($BUF, L"...")
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($BUF, $SRC)
+        - pattern: std::strcat($BUF, $SRC)
+      - pattern-not: strcat($BUF, "...")
+      - pattern-not: std::strcat($BUF, "...")
+    - patterns:
+      - pattern-either:
+        - pattern: wcscat($BUF, $SRC)
+        - pattern: std::wcscat($BUF, $SRC)
+      - pattern-not: wcscat($BUF, L"...")
+      - pattern-not: std::wcscat($BUF, L"...")
+    - patterns:
+      - pattern-either:
+        - pattern: sprintf($BUF, $FMT, ...)
+        - pattern: std::sprintf($BUF, $FMT, ...)
+      - pattern-not: sprintf($BUF, "...")
+      - pattern-not: std::sprintf($BUF, "...")
+    - patterns:
+      - pattern-either:
+        - pattern: vsprintf($BUF, $FMT, $ARGS)
+        - pattern: std::vsprintf($BUF, $FMT, $ARGS)
+      - pattern-not: vsprintf($BUF, "...", $ARGS)
+      - pattern-not: std::vsprintf($BUF, "...", $ARGS)
+    - patterns:
+      - pattern-either:
+        - pattern: scanf($FMT, $BUF)
+        - pattern: std::scanf($FMT, $BUF)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+    - patterns:
+      - pattern-either:
+        - pattern: fscanf($FP, $FMT, $BUF)
+        - pattern: std::fscanf($FP, $FMT, $BUF)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+    - patterns:
+      - pattern-either:
+        - pattern: sscanf($SRC, $FMT, $BUF)
+        - pattern: std::sscanf($SRC, $FMT, $BUF)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+    - patterns:
+      - pattern-either:
+        - pattern: wscanf($FMT, $BUF)
+        - pattern: std::wscanf($FMT, $BUF)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+    - patterns:
+      - pattern-either:
+        - pattern: fwscanf($FP, $FMT, $BUF)
+        - pattern: std::fwscanf($FP, $FMT, $BUF)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+    - patterns:
+      - pattern-either:
+        - pattern: swscanf($SRC, $FMT, $BUF)
+        - pattern: std::swscanf($SRC, $FMT, $BUF)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+    - patterns:
+      - pattern-either:
+        - pattern: memcpy($DEST, $SRC, $LEN)
+        - pattern: std::memcpy($DEST, $SRC, $LEN)
+      - pattern-not: memcpy($DEST, $SRC, sizeof($DEST))
+      - pattern-not: std::memcpy($DEST, $SRC, sizeof($DEST))
+      - pattern-not: memcpy($DEST, "...", $LEN)
+      - pattern-not: std::memcpy($DEST, "...", $LEN)
+    - patterns:
+      - pattern-either:
+        - pattern: memmove($DEST, $SRC, $LEN)
+        - pattern: std::memmove($DEST, $SRC, $LEN)
+      - pattern-not: memmove($DEST, $SRC, sizeof($DEST))
+      - pattern-not: std::memmove($DEST, $SRC, sizeof($DEST))
+    - patterns:
+      - pattern-either:
+        - pattern: wmemcpy($DEST, $SRC, $COUNT)
+        - pattern: std::wmemcpy($DEST, $SRC, $COUNT)
+      - pattern-not: wmemcpy($DEST, $SRC, sizeof($DEST))
+      - pattern-not: std::wmemcpy($DEST, $SRC, sizeof($DEST))
+    - patterns:
+      - pattern-either:
+        - pattern: wmemmove($DEST, $SRC, $COUNT)
+        - pattern: std::wmemmove($DEST, $SRC, $COUNT)
+      - pattern-not: wmemmove($DEST, $SRC, sizeof($DEST))
+      - pattern-not: std::wmemmove($DEST, $SRC, sizeof($DEST))

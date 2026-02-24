@@ -1,0 +1,190 @@
+rules:
+  - id: Process-Control
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-114: Process Control"
+      vulnerability_class:
+        - Process Control
+      owasp:
+        - A03:2021 - Injection
+      references:
+        - https://cwe.mitre.org/data/definitions/114.html
+        - https://owasp.org/www-community/attacks/Command_Injection
+        - https://www.sei.cmu.edu/downloads/sei-cert-c-coding-standard-2016-v01.pdf
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: WARNING
+    message: >
+      Executing commands or loading libraries from an untrusted source can allow
+      an attacker to execute arbitrary commands or load malicious libraries.
+      This can lead to complete system compromise. Validate and sanitize all
+      input used in process control functions, or use allowlists for permitted
+      commands and libraries.
+    pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: system($CMD)
+        - pattern: _wsystem($CMD)
+        - pattern: popen($CMD, ...)
+        - pattern: _wpopen($CMD, ...)
+        - pattern: _popen($CMD, ...)
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: execl($PATH, ...)
+        - pattern: execlp($PATH, ...)
+        - pattern: execle($PATH, $ARG0, ...)
+        - pattern: execv($PATH, ...)
+        - pattern: execvp($PATH, ...)
+        - pattern: execvpe($PATH, ...)
+        - pattern: _wexecl($PATH, ...)
+        - pattern: _wexecle($PATH, ...)
+        - pattern: _wexeclp($PATH, ...)
+        - pattern: _wexecv($PATH, ...)
+        - pattern: _wexecve($PATH, ...)
+        - pattern: _wexecvp($PATH, ...)
+      - pattern-not: $FUNC("...", "...", ...)
+      - pattern-not: $FUNC("...", "...", "...", "...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: execle($PATH, $ARG0, $ARG1, $ARG2, $INPUT, ...)
+        - pattern: execle($PATH, $ARG0, $ARG1, $INPUT, ...)
+        - pattern: execle($PATH, $ARG0, $INPUT, ...)
+      - pattern-not: execle("...", "...", "...", "...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: LoadLibraryA($PATH)
+        - pattern: LoadLibraryW($PATH)
+        - pattern: LoadLibraryExA($PATH, ...)
+        - pattern: LoadLibraryExW($PATH, ...)
+      - pattern-not: LoadLibraryA("...", ...)
+      - pattern-not: LoadLibraryW(L"...", ...)
+      - pattern-not: LoadLibraryExA("...", ...)
+      - pattern-not: LoadLibraryExW(L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: dlopen($PATH, ...)
+        - pattern: dlclose($HANDLE)
+      - pattern-not: dlopen("...", ...)
+      - pattern-not: dlopen(CONST_..., ...)
+    - patterns:
+      - pattern-either:
+        - pattern: dlsym($HANDLE, $SYMBOL)
+      - pattern-not: dlsym($HANDLE, "...")
+      - pattern-not: dlsym($HANDLE, CONST_...)
+    - patterns:
+      - pattern-either:
+        - pattern: GetProcAddress($HMODULE, $PROC)
+        - pattern: GetModuleHandleA($NAME)
+        - pattern: GetModuleHandleW($NAME)
+      - pattern-not: GetProcAddress($HMODULE, "...")
+      - pattern-not: GetProcAddress($HMODULE, CONST_...)
+      - pattern-not: GetModuleHandleA("...")
+      - pattern-not: GetModuleHandleW(L"...")
+    - patterns:
+      - pattern-either:
+        - pattern: setenv($NAME, $VALUE, ...)
+        - pattern: putenv($STRING)
+        - pattern: _putenv($STRING)
+        - pattern: _wputenv($STRING)
+        - pattern: SetEnvironmentVariableA($NAME, $VALUE)
+        - pattern: SetEnvironmentVariableW($NAME, $VALUE)
+      - pattern-not: setenv("...", "...", ...)
+      - pattern-not: putenv("...")
+      - pattern-not: SetEnvironmentVariableA("...", "...")
+      - pattern-not: SetEnvironmentVariableW(L"...", L"...")
+    - patterns:
+      - pattern-either:
+        - pattern: std::system($CMD)
+      - pattern-not: std::system("...")
+    - patterns:
+      - pattern-either:
+        - pattern: $OBJ.start($PROGRAM, ...)
+        - pattern: $OBJ.execute($CMD, ...)
+        - pattern: $OBJ.startDetached($CMD, ...)
+      - pattern-not: $OBJ.start("...", ...)
+      - pattern-not: $OBJ.execute("...", ...)
+      - pattern-not: $OBJ.startDetached("...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: CreateProcessA($APP, $CMD, ...)
+        - pattern: CreateProcessW($APP, $CMD, ...)
+        - pattern: ShellExecuteA($HWND, $OP, $FILE, ...)
+        - pattern: ShellExecuteW($HWND, $OP, $FILE, ...)
+        - pattern: ShellExecuteExA($INFO)
+        - pattern: ShellExecuteExW($INFO)
+      - pattern-not: CreateProcessA("...", "...", ...)
+      - pattern-not: CreateProcessW(L"...", L"...", ...)
+      - pattern-not: ShellExecuteA($HWND, $OP, "...", ...)
+      - pattern-not: ShellExecuteW($HWND, $OP, L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($DEST, $SRC)
+        - pattern: wcscat($DEST, $SRC)
+      - pattern-inside: |
+          char $DEST[...];
+          ...
+      - pattern-not: strcat($DEST, "...")
+      - pattern-not: strcat($DEST, L"...")
+      - pattern-not: wcscat($DEST, "...")
+      - pattern-not: wcscat($DEST, L"...")
+    - patterns:
+      - pattern-either:
+        - pattern: sprintf($BUF, $FMT, $INPUT, ...)
+        - pattern: snprintf($BUF, $SIZE, $FMT, $INPUT, ...)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+      - pattern-not: sprintf($BUF, "...", "...")
+      - pattern-not: snprintf($BUF, $SIZE, "...", "...")
+    - patterns:
+      - pattern-either:
+        - pattern: strcpy($DEST, $SRC)
+        - pattern: strncpy($DEST, $SRC, ...)
+        - pattern: wcscpy($DEST, $SRC)
+      - pattern-inside: |
+          char $DEST[...];
+          ...
+      - pattern-not: strcpy($DEST, "...")
+      - pattern-not: strncpy($DEST, "...", ...)
+      - pattern-not: wcscpy($DEST, L"...")
+    - patterns:
+      - pattern: $FUNC($CMD, ...)
+      - pattern-inside: |
+          $TYPE $CMD = argv[$IDX];
+          ...
+      - metavariable-pattern:
+          metavariable: $FUNC
+          patterns:
+            - pattern: system
+            - pattern: popen
+            - pattern: execl
+            - pattern: execv
+            - pattern: LoadLibraryA
+            - pattern: LoadLibraryW
+            - pattern: dlopen
+      - pattern-not: $FUNC("...", ...)
+    - patterns:
+      - pattern: $FUNC($CMD, ...)
+      - pattern-inside: |
+          $TYPE $CMD = getenv(...);
+          ...
+      - metavariable-pattern:
+          metavariable: $FUNC
+          patterns:
+            - pattern: system
+            - pattern: popen
+            - pattern: execl
+            - pattern: execv
+            - pattern: LoadLibraryA
+            - pattern: LoadLibraryW
+            - pattern: dlopen
+      - pattern-not: $FUNC("...", ...)

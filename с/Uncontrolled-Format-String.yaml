@@ -1,0 +1,108 @@
+rules:
+  - id: Uncontrolled-Format-String
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-134: Use of Externally-Controlled Format String"
+      vulnerability_class:
+        - Memory Issues
+      owasp:
+        - A03:2021 - Injection
+      references:
+        - https://cwe.mitre.org/data/definitions/134.html
+        - https://julianor.tripod.com/bc/formatstring-1.2.pdf
+        - https://www.sei.cmu.edu/downloads/sei-cert-c-coding-standard-2016-v01.pdf
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: ERROR
+    message: >
+      The function '$FUNC' uses a format string argument that may originate from 
+      untrusted input. An attacker controlling this input can cause buffer 
+      overflows, information disclosure, or arbitrary code execution via format 
+      specifiers like %s, %x, or %n. Use a literal format string or validate 
+      input before passing to format functions.
+    pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: printf($FMT, ...)
+        - pattern: vprintf($FMT, ...)
+        - pattern: wprintf($FMT, ...)
+        - pattern: vwprintf($FMT, ...)
+        - pattern: vcprintf($FMT, ...)
+        - pattern: vcwprintf($FMT, ...)
+        - pattern: vscprintf($FMT, ...)
+        - pattern: vscwprintf($FMT, ...)
+        - pattern: printk($FMT, ...)
+        - pattern: scanf($FMT, ...)
+        - pattern: __isoc99_scanf($FMT, ...)
+        - pattern: vscanf($FMT, ...)
+        - pattern: __isoc99_vscanf($FMT, ...)
+        - pattern: wscanf($FMT, ...)
+        - pattern: vwscanf($FMT, ...)
+        - pattern: warn($FMT, ...)
+        - pattern: vwarn($FMT, ...)
+        - pattern: warnx($FMT, ...)
+        - pattern: vwarnx($FMT, ...)
+      - pattern-not: $_("...", ...)
+      - pattern-not: $_(gettext(...), ...)
+      - pattern-not: $_(dgettext(...), ...)
+      - pattern-not: $_(dcgettext(...), ...)
+      - pattern-not: $_(ngettext(...), ...)
+      - pattern-not: $_(safe_printf(...), ...)
+      - pattern-not: $_(log_safe(...), ...)
+    - patterns:
+      - pattern-either:
+        - pattern: fprintf($STREAM, $FMT, ...)
+        - pattern: vfprintf($STREAM, $FMT, ...)
+        - pattern: fwprintf($STREAM, $FMT, ...)
+        - pattern: vfwprintf($STREAM, $FMT, ...)
+        - pattern: sprintf($BUF, $FMT, ...)
+        - pattern: vsprintf($BUF, $FMT, ...)
+        - pattern: asprintf($PTR, $FMT, ...)
+        - pattern: vasprintf($PTR, $FMT, ...)
+        - pattern: dprintf($FD, $FMT, ...)
+        - pattern: vdprintf($FD, $FMT, ...)
+        - pattern: wsprintf($BUF, $FMT, ...)
+        - pattern: fscanf($STREAM, $FMT, ...)
+        - pattern: __isoc99_fscanf($STREAM, $FMT, ...)
+        - pattern: vfscanf($STREAM, $FMT, ...)
+        - pattern: __isoc99_vfscanf($STREAM, $FMT, ...)
+        - pattern: fwscanf($STREAM, $FMT, ...)
+        - pattern: vfwscanf($STREAM, $FMT, ...)
+        - pattern: sscanf($BUF, $FMT, ...)
+        - pattern: __isoc99_sscanf($BUF, $FMT, ...)
+        - pattern: vsscanf($BUF, $FMT, ...)
+        - pattern: __isoc99_vsscanf($BUF, $FMT, ...)
+        - pattern: swscanf($BUF, $FMT, ...)
+        - pattern: vswscanf($BUF, $FMT, ...)
+        - pattern: syslog($PRIORITY, $FMT, ...)
+        - pattern: vsyslog($PRIORITY, $FMT, ...)
+        - pattern: err($EXITCODE, $FMT, ...)
+        - pattern: verr($EXITCODE, $FMT, ...)
+        - pattern: errx($EXITCODE, $FMT, ...)
+        - pattern: verrx($EXITCODE, $FMT, ...)
+        - pattern: warnc($ERRNO, $FMT, ...)
+        - pattern: vwarnc($ERRNO, $FMT, ...)
+      - pattern-not: $_($_, "...", ...)
+      - pattern-not: $_($_, gettext(...), ...)
+      - pattern-not: $_($_, dgettext(...), ...)
+      - pattern-not: $_($_, dcgettext(...), ...)
+      - pattern-not: $_($_, ngettext(...), ...)
+    - patterns:
+      - pattern-either:
+        - pattern: snprintf($BUF, $SIZE, $FMT, ...)
+        - pattern: vsnprintf($BUF, $SIZE, $FMT, ...)
+        - pattern: swprintf($BUF, $SIZE, $FMT, ...)
+        - pattern: vswprintf($BUF, $SIZE, $FMT, ...)
+        - pattern: errc($EXITCODE, $ERRNO, $FMT, ...)
+        - pattern: verrc($EXITCODE, $ERRNO, $FMT, ...)
+      - pattern-not: $_($_, $_, "...", ...)
+      - pattern-not: $_($_, $_, gettext(...), ...)
+      - pattern-not: $_($_, $_, dgettext(...), ...)
+      - pattern-not: $_($_, $_, dcgettext(...), ...)

@@ -1,0 +1,321 @@
+rules:
+  - id: OS-Command-Injection
+    meta:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      vulnerability_class:
+        - Injection
+      owasp:
+        - A03:2021 - Injection
+      references:
+        - https://cwe.mitre.org/data/definitions/78.html
+        - https://owasp.org/www-community/attacks/Command_Injection
+      technology:
+        - c
+        - cpp
+    languages:
+      - c
+      - c++
+    severity: ERROR
+    message: >
+      Potential OS command injection detected. User-controlled input is passed to 
+      a system command execution function without proper sanitization. This allows 
+      attackers to execute arbitrary commands. Use allowlists or parameterized APIs.
+    pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: system($CMD)
+        - pattern: _wsystem($CMD)
+        - pattern: std::system($CMD)
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: popen($CMD, $MODE)
+        - pattern: _popen($CMD, $MODE)
+        - pattern: _wpopen($CMD, $MODE)
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: execl($PATH, $ARG0, ...)
+        - pattern: execlp($PATH, $ARG0, ...)
+        - pattern: execle($PATH, $ARG0, ...)
+        - pattern: execv($PATH, $ARGV)
+        - pattern: execvp($PATH, $ARGV)
+        - pattern: execvpe($PATH, $ARGV, $ENVP)
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: CreateProcessA($APP, $CMD, ...)
+        - pattern: CreateProcessW($APP, $CMD, ...)
+      - pattern-not: $FUNC($APP, "...", ...)
+      - pattern-not: $FUNC($APP, L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: ShellExecuteA($HWND, $OP, $FILE, $PARAMS, ...)
+        - pattern: ShellExecuteW($HWND, $OP, $FILE, $PARAMS, ...)
+      - pattern-not: $FUNC($HWND, $OP, "...", ...)
+      - pattern-not: $FUNC($HWND, $OP, L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: posix_spawn($PID, $PATH, ...)
+        - pattern: _spawnl($MODE, $PATH, ...)
+        - pattern: _wspawnl($MODE, $PATH, ...)
+        - pattern: _spawnlp($MODE, $PATH, ...)
+        - pattern: _wspawnlp($MODE, $PATH, ...)
+        - pattern: _spawnv($MODE, $PATH, ...)
+        - pattern: _wspawnv($MODE, $PATH, ...)
+        - pattern: _spawnvp($MODE, $PATH, ...)
+        - pattern: _wspawnvp($MODE, $PATH, ...)
+      - pattern-not: $FUNC($MODE, "...", ...)
+      - pattern-not: $FUNC($MODE, L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: sprintf($BUF, $FMT, $INPUT, ...)
+        - pattern: snprintf($BUF, $SIZE, $FMT, $INPUT, ...)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+      - pattern-not: sprintf($BUF, "...", "...")
+      - pattern-not: snprintf($BUF, $SIZE, "...", "...")
+    - patterns:
+      - pattern-either:
+        - pattern: sprintf($BUF, $FMT, $INPUT, ...)
+        - pattern: snprintf($BUF, $SIZE, $FMT, $INPUT, ...)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+      - pattern-inside: |
+          char $BUF[$SIZE];
+          ...
+      - pattern-either:
+        - pattern: system($BUF)
+        - pattern: _wsystem($BUF)
+        - pattern: std::system($BUF)
+        - pattern: popen($BUF, $MODE)
+        - pattern: _popen($BUF, $MODE)
+        - pattern: _wpopen($BUF, $MODE)
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($DEST, $SRC)
+        - pattern: strncat($DEST, $SRC, $N)
+      - pattern-inside: |
+          char $DEST[$SIZE];
+          ...
+      - pattern-not: strcat($DEST, "...")
+      - pattern-not: strcat($DEST, '/' )
+      - pattern-not: strncat($DEST, "...", $N)
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($DEST, $SRC)
+        - pattern: strncat($DEST, $SRC, $N)
+      - pattern-inside: |
+          char $DEST[$SIZE];
+          ...
+          strcat($DEST, $SRC);
+          ...
+          system($DEST);
+          ...
+      - pattern-not: strcat($DEST, "...")
+      - pattern-not: strncat($DEST, "...", $N)
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($DEST, $SRC)
+        - pattern: strncat($DEST, $SRC, $N)
+      - pattern-inside: |
+          char $DEST[$SIZE];
+          ...
+          strcat($DEST, $SRC);
+          ...
+          popen($DEST, $MODE);
+          ...
+      - pattern-not: strcat($DEST, "...")
+      - pattern-not: strncat($DEST, "...", $N)
+    - patterns:
+      - pattern-either:
+        - pattern: wcscat($DEST, $SRC)
+        - pattern: wcsncat($DEST, $SRC, $N)
+      - pattern-inside: |
+          wchar_t $DEST[$SIZE];
+          ...
+      - pattern-not: wcscat($DEST, L"...")
+      - pattern-not: wcsncat($DEST, L"...", $N)
+    - patterns:
+      - pattern-either:
+        - pattern: strcpy($DEST, $SRC)
+        - pattern: strncpy($DEST, $SRC, $N)
+      - pattern-inside: |
+          char $DEST[$SIZE];
+          ...
+      - pattern-not: strcpy($DEST, "...")
+      - pattern-not: strncpy($DEST, "...", $N)
+    - patterns:
+      - pattern-either:
+        - pattern: wcscpy($DEST, $SRC)
+        - pattern: wcsncpy($DEST, $SRC, $N)
+      - pattern-inside: |
+          wchar_t $DEST[$SIZE];
+          ...
+      - pattern-not: wcscpy($DEST, L"...")
+      - pattern-not: wcsncpy($DEST, L"...", $N)
+    - patterns:
+      - pattern: $VAR = $BASE + $USER_INPUT
+      - pattern-not: $VAR = "..." + "..."
+      - pattern-not: $VAR = "..." + CONST_...
+      - pattern-not: $VAR = CONST_... + "..."
+      - pattern-either:
+        - pattern: std::system($VAR.c_str())
+        - pattern: std::system($VAR)
+    - patterns:
+      - pattern-either:
+        - pattern: QProcess::start($CMD, ...)
+        - pattern: QProcess::execute($CMD, ...)
+        - pattern: QProcess::startDetached($CMD, ...)
+      - pattern-not: QProcess::start("...", ...)
+      - pattern-not: QProcess::execute("...", ...)
+      - pattern-not: QProcess::startDetached("...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: system($CMD)
+        - pattern: popen($CMD, $MODE)
+        - pattern: std::system($CMD)
+      - pattern-inside: |
+          $TYPE $CMD = argv[$IDX];
+          ...
+    - patterns:
+      - pattern-either:
+        - pattern: system($CMD)
+        - pattern: popen($CMD, $MODE)
+        - pattern: std::system($CMD)
+      - pattern-inside: |
+          $TYPE $CMD = getenv(...);
+          ...
+    - patterns:
+      - pattern-either:
+        - pattern: system($CMD)
+        - pattern: popen($CMD, $MODE)
+      - pattern-inside: |
+          char $CMD[$SIZE];
+          ...
+          fgets($CMD, ...);
+          ...
+    - patterns:
+      - pattern-either:
+        - pattern: system($CMD)
+        - pattern: popen($CMD, $MODE)
+      - pattern-inside: |
+          char $CMD[$SIZE];
+          ...
+          scanf("%s", $CMD);
+          ...
+    - patterns:
+      - pattern-either:
+        - pattern: setenv($NAME, $VALUE, $OVERRIDE)
+        - pattern: putenv($STRING)
+        - pattern: _putenv($STRING)
+        - pattern: _wputenv($STRING)
+      - pattern-not: setenv("...", "...", ...)
+      - pattern-not: putenv("...")
+      - pattern-not: _putenv("...")
+    - patterns:
+      - pattern-either:
+        - pattern: setenv($NAME, $VALUE, $OVERRIDE)
+        - pattern: putenv($STRING)
+      - pattern-inside: |
+          char $VALUE[$SIZE];
+          ...
+          fgets($VALUE, ...);
+          ...
+    - patterns:
+      - pattern-either:
+        - pattern: setenv($NAME, $VALUE, $OVERRIDE)
+        - pattern: putenv($STRING)
+      - pattern-inside: |
+          char $VALUE[$SIZE];
+          ...
+          $VALUE = fgets(...);
+          ...
+      - pattern-not: setenv($NAME, "...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: dlopen($PATH, $FLAGS)
+        - pattern: _wopen($PATH, ...)
+      - pattern-not: dlopen("...", ...)
+      - pattern-not: dlopen(L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: LoadLibraryA($PATH)
+        - pattern: LoadLibraryW($PATH)
+      - pattern-not: LoadLibraryA("...", ...)
+      - pattern-not: LoadLibraryW(L"...", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: system($CMD)
+        - pattern: popen($CMD, $MODE)
+        - pattern: std::system($CMD)
+      - pattern-inside: |
+          $TYPE $CMD;
+          ...
+          $CMD = $INPUT;
+          ...
+      - metavariable-pattern:
+          metavariable: $INPUT
+          patterns:
+            - pattern: argv[$IDX]
+            - pattern: getenv(...)
+            - pattern: fgets(...)
+            - pattern: scanf(...)
+    - patterns:
+      - pattern-either:
+        - pattern: sprintf($BUF, $FMT, $INPUT, ...)
+        - pattern: snprintf($BUF, $SIZE, $FMT, $INPUT, ...)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '.*%s.*'
+      - pattern-inside: |
+          char $BUF[$SIZE];
+          ...
+      - pattern-either:
+        - pattern: CreateProcessA($APP, $BUF, ...)
+        - pattern: CreateProcessW($APP, $BUF, ...)
+        - pattern: ShellExecuteA($HWND, $OP, $BUF, ...)
+        - pattern: ShellExecuteW($HWND, $OP, $BUF, ...)
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($DEST, $SRC)
+        - pattern: strcpy($DEST, $SRC)
+      - pattern-inside: |
+          char $DEST[$SIZE];
+          ...
+      - pattern-either:
+        - pattern: CreateProcessA($APP, $DEST, ...)
+        - pattern: ShellExecuteA($HWND, $OP, $DEST, ...)
+      - pattern-not: strcat($DEST, "...")
+      - pattern-not: strcpy($DEST, "...")
+    - patterns:
+      - pattern-either:
+        - pattern: strcat($DEST, $SRC)
+        - pattern: strncat($DEST, $SRC, $N)
+        - pattern: strcpy($DEST, $SRC)
+        - pattern: strncpy($DEST, $SRC, $N)
+      - pattern-inside: |
+          char $DEST[$SIZE];
+          ...
+      - pattern-not: strcat($DEST, "...")
+      - pattern-not: strncat($DEST, "...", $N)
+      - pattern-not: strcpy($DEST, "...")
+      - pattern-not: strncpy($DEST, "...", $N)
+    - patterns:
+      - pattern: $EXEC($CMD)
+      - metavariable-pattern:
+          metavariable: $EXEC
+          patterns:
+            - pattern: exec
+            - pattern: $FUNC
+      - pattern-not: $EXEC("...", ...)
+      - pattern-not: $EXEC(L"...", ...)

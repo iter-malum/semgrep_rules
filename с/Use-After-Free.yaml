@@ -1,0 +1,206 @@
+rules:
+  - id: Use-After-Free
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-416: Use After Free"
+      vulnerability_class:
+        - Memory Issues
+      references:
+        - https://cwe.mitre.org/data/definitions/416.html
+    languages:
+      - c
+      - c++
+    severity: ERROR
+    message: >
+      The product reuses or references memory after it has been freed. This can
+      lead to undefined behavior, memory corruption, or arbitrary code execution.
+    pattern-either:
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          $PTR->$FIELD;
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          $PTR->$FIELD;
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          (*$PTR).$FIELD;
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          (*$PTR).$FIELD;
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          $PTR[$IDX];
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          $PTR[$IDX];
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          *$PTR;
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          *$PTR;
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          return $PTR;
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          return $PTR;
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          return *$PTR;
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          return *$PTR;
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          $FUNC(..., $PTR, ...);
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          $FUNC(..., $PTR, ...);
+      - metavariable-pattern:
+          metavariable: $FUNC
+          patterns:
+            - pattern-not: free
+            - pattern-not: realloc
+    - patterns:
+      - pattern: |
+          free($PTR);
+          ...
+          $FUNC(..., $PTR->$FIELD, ...);
+      - pattern-not: |
+          free($PTR);
+          ...
+          $PTR = $NEW;
+          ...
+          $FUNC(..., $PTR->$FIELD, ...);
+      - metavariable-pattern:
+          metavariable: $FUNC
+          patterns:
+            - pattern-not: free
+            - pattern-not: realloc
+    - patterns:
+      - pattern: |
+          delete $PTR;
+          ...
+          $PTR->$FIELD;
+      - pattern-not: |
+          delete $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          $PTR->$FIELD;
+    - patterns:
+      - pattern: |
+          delete $PTR;
+          ...
+          (*$PTR).$FIELD;
+      - pattern-not: |
+          delete $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          (*$PTR).$FIELD;
+    - patterns:
+      - pattern: |
+          delete $PTR;
+          ...
+          $PTR[$IDX];
+      - pattern-not: |
+          delete $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          $PTR[$IDX];
+    - patterns:
+      - pattern: |
+          delete $PTR;
+          ...
+          *$PTR;
+      - pattern-not: |
+          delete $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          *$PTR;
+    - patterns:
+      - pattern: |
+          delete[] $PTR;
+          ...
+          $PTR->$FIELD;
+      - pattern-not: |
+          delete[] $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          $PTR->$FIELD;
+    - patterns:
+      - pattern: |
+          delete[] $PTR;
+          ...
+          (*$PTR).$FIELD;
+      - pattern-not: |
+          delete[] $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          (*$PTR).$FIELD;
+    - patterns:
+      - pattern: |
+          delete[] $PTR;
+          ...
+          $PTR[$IDX];
+      - pattern-not: |
+          delete[] $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          $PTR[$IDX];
+    - patterns:
+      - pattern: |
+          delete[] $PTR;
+          ...
+          *$PTR;
+      - pattern-not: |
+          delete[] $PTR;
+          ...
+          $PTR = $NEW;
+          ...
+          *$PTR;
