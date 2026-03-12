@@ -1,0 +1,144 @@
+rules:
+  - id: weak-cryptography-dart
+    message: 'Weak cryptography detected! Using $ALGORITHM which is considered insecure. Use stronger algorithms like AES-256-GCM, SHA-256, or SHA-512 instead.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # ECB режим шифрования (небезопасно)
+          - pattern: 'AESMode.ecb'
+          - pattern: 'AESMode.ECB'
+          - pattern: 'AES(key: $KEY, mode: AESMode.ecb)'
+          - pattern: 'AES(key: $KEY, mode: AESMode.ECB)'
+          - pattern: 'Encrypter(AES(key: $KEY, mode: AESMode.ecb))'
+          - pattern: 'Encrypter(AES(key: $KEY, mode: AESMode.ECB))'
+          - pattern: 'AESBlockCipher(mode: AESMode.ecb)'
+          - pattern: 'AESBlockCipher(mode: AESMode.ECB)'
+          
+          # CBC режим шифрования (без аутентификации)
+          - pattern: 'AES(key: $KEY, mode: AESMode.cbc)'
+          - pattern: 'AES(key: $KEY, mode: AESMode.CBC)'
+          - pattern: 'Encrypter(AES(key: $KEY, mode: AESMode.cbc))'
+          - pattern: 'Encrypter(AES(key: $KEY, mode: AESMode.CBC))'
+          
+          # MD5 хеширование
+          - pattern: 'md5.convert($DATA)'
+          - pattern: 'md5.hash($DATA)'
+          - pattern: 'MD5Digest()'
+          - pattern: 'MD5Digest().process($DATA)'
+          - pattern: 'Digest("MD5")'
+          - pattern: 'Digest("md5")'
+          
+          # SHA1 хеширование
+          - pattern: 'sha1.convert($DATA)'
+          - pattern: 'sha1.hash($DATA)'
+          - pattern: 'SHA1Digest()'
+          - pattern: 'SHA1Digest().process($DATA)'
+          - pattern: 'Digest("SHA-1")'
+          - pattern: 'Digest("sha-1")'
+          
+          # Слабые ключи (короткие строки)
+          - patterns:
+              - pattern: 'Key.fromUtf8($KEY)'
+              - metavariable-pattern:
+                  metavariable: $KEY
+                  pattern-regex: '^.{1,15}$'
+          
+          - patterns:
+              - pattern: 'Key($BYTES)'
+              - metavariable-pattern:
+                  metavariable: $BYTES
+                  pattern-regex: 'Uint8List\.fromList\(\[\d{1,2}(?:,\s*\d{1,2}){0,7}\]\)'
+          
+          # DES/3DES
+          - pattern: 'DESBlockCipher()'
+          - pattern: 'DESEngine()'
+          - pattern: 'TripleDesEngine()'
+          - pattern: 'DESCipher()'
+          
+          # RC4
+          - pattern: 'RC4Engine()'
+          
+          # Статические IV (любые предсказуемые значения)
+          - patterns:
+              - pattern: 'IV.fromUtf8($IV)'
+              - metavariable-pattern:
+                  metavariable: $IV
+                  pattern-regex: '^[0-9a-fA-F]{16,}$|^.{16,}$'
+          
+          - patterns:
+              - pattern: 'IV($BYTES)'
+              - metavariable-pattern:
+                  metavariable: $BYTES
+                  pattern-regex: 'Uint8List\.fromList\(\[[0-9, ]{16,}\]\)'
+          
+          # RIPEMD160
+          - pattern: 'RIPEMD160Digest()'
+          - pattern: 'RIPEMD160Digest().process($DATA)'
+          
+          # Whirlpool
+          - pattern: 'WhirlpoolDigest()'
+          - pattern: 'WhirlpoolDigest().process($DATA)'
+          
+          # Динамические алгоритмы (могут быть опасны)
+          - patterns:
+              - pattern: '$FUNC($PARAM).convert($DATA)'
+              - metavariable-regex:
+                  metavariable: $FUNC
+                  regex: '(getHashFunction|getDigest|createHash|getAlgorithm)'
+          
+          - patterns:
+              - pattern: 'getEncrypter($PARAM)'
+          
+          - patterns:
+              - pattern: 'Encrypter(AES(key: $KEY, mode: getMode($PARAM)))'
+          
+          # Условное использование
+          - patterns:
+              - pattern: '$COND ? $WEAK : $STRONG'
+              - metavariable-regex:
+                  metavariable: $WEAK
+                  regex: '(md5|sha1|AESMode\.ecb|AESMode\.cbc)'
+          
+          # Фабрики
+          - patterns:
+              - pattern: 'if ($ALGO == "md5") { $BODY }'
+              - metavariable-pattern:
+                  metavariable: $BODY
+                  pattern-regex: '(md5\.convert|MD5Digest)'
+          
+          - patterns:
+              - pattern: 'if ($ALGO == "sha1") { $BODY }'
+              - metavariable-pattern:
+                  metavariable: $BODY
+                  pattern-regex: '(sha1\.convert|SHA1Digest)'
+          
+          - patterns:
+              - pattern: 'if ($MODE == "ecb") { $BODY }'
+              - metavariable-pattern:
+                  metavariable: $BODY
+                  pattern-regex: 'AESMode\.ecb'
+          
+          - patterns:
+              - pattern: 'if ($MODE == "cbc") { $BODY }'
+              - metavariable-pattern:
+                  metavariable: $BODY
+                  pattern-regex: 'AESMode\.cbc'
+          
+          # Статические nonce/IV с конкретными значениями
+          - pattern: 'IV.fromUtf8("0000000000000000")'
+          - pattern: 'IV.fromUtf8("1234567890123456")'
+          - pattern: 'IV.fromUtf8("fixed_iv_value")'
+          - pattern: 'IV.fromUtf8("static_nonce")'
+          
+          # Динамические вызовы функций, возвращающих хеш-функции
+          - pattern: 'getHashFunction(algorithmName).convert(data)'
+          - pattern: 'getEncrypter(mode)'
+      
+      # Исключения
+      - pattern-not-regex: '.*//.*deprecated.*'
+      - pattern-not-regex: '.*//.*insecure.*'
+      - pattern-not-regex: '.*//.*use.*instead.*'
+      - pattern-not-regex: '.*ignore:.*crypto.*'
+      - pattern-not-regex: '.*@visibleForTesting.*'

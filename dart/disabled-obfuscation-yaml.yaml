@@ -1,0 +1,19 @@
+rules:
+  - id: disabled-obfuscation-yaml
+    message: 'Code obfuscation is disabled! Build without --obfuscate flag makes the app vulnerable to reverse engineering.'
+    languages:
+      - yaml
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          # Поиск команд в GitHub Actions
+          - pattern-regex: 'run:.*flutter build (?!.*--obfuscate).*(apk|appbundle|ios|ipa|linux|macos|windows|aar)'
+          
+          # Поиск в pubspec.yaml (отсутствие конфигурации обфускации)
+          - patterns:
+              - pattern: 'flutter:'
+              - pattern-not-inside: |
+                  flutter:
+                    build:
+                      release:
+                        obfuscate: true

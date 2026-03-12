@@ -1,0 +1,8 @@
+rules:
+  - id: disabled-obfuscation-docker
+    message: 'Code obfuscation is disabled! Build without --obfuscate flag makes the app vulnerable to reverse engineering.'
+    languages:
+      - dockerfile
+    severity: WARNING
+    patterns:
+      - pattern-regex: 'RUN.*flutter build (?!.*--obfuscate).*(apk|appbundle|ios|ipa|linux|macos|windows|aar)'

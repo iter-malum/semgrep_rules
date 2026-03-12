@@ -1,0 +1,47 @@
+rules:
+  - id: missing-ssl-pinning
+    message: Missing SSL Pinning detected! Application is vulnerable to MITM
+      attacks. Implement SSL pinning using certificate or public key pinning.
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: HttpClient()
+          - pattern: new HttpClient()
+          - pattern: http.Client()
+          - pattern: new http.Client()
+          - pattern: Dio()
+          - pattern: new Dio()
+          - pattern: Dio(BaseOptions())
+          - pattern: Dio(BaseOptions(...))
+          - pattern: WebSocket.connect($URL)
+          - pattern: IOWebSocketChannel.connect($URL)
+          - pattern: WebSocketChannel.connect($URL)
+          - pattern: SecurityContext()
+          - pattern: new SecurityContext()
+          - pattern: IOClient($CLIENT)
+          - pattern: http.get($URL)
+          - pattern: http.post($URL, $BODY)
+          - pattern: http.put($URL, $BODY)
+          - pattern: http.delete($URL)
+          - pattern: http.patch($URL, $BODY)
+          - pattern: http.head($URL)
+          - pattern: _dio.get($URL)
+          - pattern: _client.getUrl($URL)
+          - pattern: http.options($URL)
+          - pattern: http.read($URL)
+          - pattern: http.readBytes($URL)
+          - pattern: PlatformInterface()
+          - pattern: DefaultHttpClientAdapter()
+          - pattern: Uri.parse("http://$HOST")
+          
+          - pattern: Uri.http($HOST, $PATH)
+          - pattern: 'Uri(scheme: "http", host: $HOST)'
+      - pattern-not-regex: .*localhost.*
+      - pattern-not-regex: .*127\.0\.0\.1.*
+      - pattern-not-regex: .*::1.*
+      - pattern-not-regex: .*192\.168\..*
+      - pattern-not-regex: .*10\..*
+      - pattern-not-regex: .*//.*ignore:.*pinning.*
+      - pattern-not-regex: .*@visibleForTesting.*

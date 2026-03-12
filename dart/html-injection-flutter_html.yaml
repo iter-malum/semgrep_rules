@@ -1,0 +1,91 @@
+rules:
+  - id: html-injection-flutter_html
+    mode: taint
+    message: 'HTML Injection vulnerability detected! Untrusted data flows into Html widget without sanitization. Use sanitizeHtml, bleachHtml, or htmlEscape to prevent XSS attacks.'
+    languages:
+      - dart
+    severity: ERROR
+    pattern-sources:
+      # Источники непроверенных данных
+      - patterns:
+          - pattern-either:
+              - pattern: $VAR
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: '(?i).*(userInput|userComment|message|htmlContent|richText|username|userBio|postContent|comment|profileData|apiResponse|localStorage|fileContent|databaseData|sharedPrefs|content|html|rawInput|source|data|input|value|_dynamicHtml|_submittedHtml|_controller\.text|snapshot\.data).*'
+      
+      # Параметры функций
+      - patterns:
+          - pattern-inside: |
+              $FUNC($PARAM, ...) {
+                ...
+              }
+          - metavariable-regex:
+              metavariable: $PARAM
+              regex: '(?i).*(input|data|html|content|value|source).*'
+      
+      # Параметры конструкторов
+      - patterns:
+          - pattern-inside: |
+              $CLASS({$FIELD, ...}) {
+                ...
+              }
+          - metavariable-regex:
+              metavariable: $FIELD
+              regex: '(?i).*(input|data|html|content|value|source).*'
+      
+      # Контроллеры и стримы
+      - pattern: '$CONTROLLER.text'
+      - pattern: 'snapshot.data'
+      - pattern: 'snapshot.data!'
+      - pattern: 'TextEditingController($VALUE).text'
+      
+      # Внешние источники
+      - pattern: 'fetchFromApi()'
+      - pattern: 'readFromStorage()'
+      - pattern: 'readFile()'
+      - pattern: 'queryDatabase()'
+      - pattern: 'getSharedPrefs()'
+      
+      # Переменные состояния
+      - pattern: '_dynamicHtml'
+      - pattern: '_submittedHtml'
+      
+    pattern-sinks:
+      # Прямое использование Html виджета
+      - pattern: 'Html(data: $SINK)'
+      - pattern: 'Html(data: $SINK, $OPTIONS)'
+      
+      # Использование в циклах и списках
+      - pattern: '$LIST.map(($VAR) => Html(data: $VAR))'
+      - pattern: 'for (var $VAR in $LIST) { Html(data: $VAR) }'
+      
+    pattern-sanitizers:
+      # Функции очистки HTML
+      - pattern: 'sanitizeHtml($DATA)'
+      - pattern: 'bleachHtml($DATA)'
+      - pattern: '_customSanitize($DATA)'
+      - pattern: '_encodeHtml($DATA)'
+      - pattern: 'htmlEscape.convert($DATA)'
+      - pattern: 'const HtmlEscape().convert($DATA)'
+      
+      # Удаление HTML-тегов
+      - pattern: '$DATA.replaceAll(RegExp(r''<[^>]*>''), '''')'
+      
+      # Экранирование специальных символов
+      - pattern: '$DATA.replaceAll(''<'', ''&lt;'').replaceAll(''>'', ''&gt;'')'
+      - pattern: '$DATA.replaceAll(''&'', ''&amp;'').replaceAll(''<'', ''&lt;'').replaceAll(''>'', ''&gt;'').replaceAll(''"'', ''&quot;'').replaceAll('''''', ''&#39;'')'
+      
+      # Белый список констант
+      - pattern: 'predefinedHtml[$KEY]'
+      
+    metadata:
+      references:
+        - 'https://pub.dev/packages/flutter_html'
+        - 'https://owasp.org/www-community/attacks/xss/'
+      category: security
+      technology:
+        - flutter
+        - dart
+      cwe: 'CWE-79: Improper Neutralization of Input During Web Page Generation'
+      confidence: HIGH

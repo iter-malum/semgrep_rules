@@ -1,0 +1,175 @@
+rules:
+  - id: sql-injection-sqflite
+    message: 'SQL Injection vulnerability detected! String concatenation or interpolation in SQL query. Use parameterized queries with ? placeholders instead.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # Поиск конкатенации через +
+          - pattern: 'database.rawQuery($X + $Y)'
+          - pattern: 'await database.rawQuery($X + $Y)'
+          - pattern: 'database.rawInsert($X + $Y)'
+          - pattern: 'await database.rawInsert($X + $Y)'
+          - pattern: 'database.rawUpdate($X + $Y)'
+          - pattern: 'await database.rawUpdate($X + $Y)'
+          - pattern: 'database.rawDelete($X + $Y)'
+          - pattern: 'await database.rawDelete($X + $Y)'
+          - pattern: 'database.execute($X + $Y)'
+          - pattern: 'await database.execute($X + $Y)'
+          
+          # Поиск интерполяции через $
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawQuery($QUERY)'
+                  - pattern: 'await database.rawQuery($QUERY)'
+                  - pattern: 'database.rawInsert($QUERY)'
+                  - pattern: 'await database.rawInsert($QUERY)'
+                  - pattern: 'database.rawUpdate($QUERY)'
+                  - pattern: 'await database.rawUpdate($QUERY)'
+                  - pattern: 'database.rawDelete($QUERY)'
+                  - pattern: 'await database.rawDelete($QUERY)'
+                  - pattern: 'database.execute($QUERY)'
+                  - pattern: 'await database.execute($QUERY)'
+                  - pattern: 'txn.rawInsert($QUERY)'
+                  - pattern: 'txn.rawQuery($QUERY)'
+                  - pattern: 'txn.rawUpdate($QUERY)'
+                  - pattern: 'txn.rawDelete($QUERY)'
+                  - pattern: 'txn.execute($QUERY)'
+                  - pattern: 'batch.rawInsert($QUERY)'
+                  - pattern: 'batch.rawQuery($QUERY)'
+              - metavariable-pattern:
+                  metavariable: $QUERY
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          # Поиск тернарных операторов с интерполяцией
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawQuery($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawQuery($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $THEN
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawInsert($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawInsert($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $THEN
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawUpdate($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawUpdate($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $THEN
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawDelete($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawDelete($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $THEN
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.execute($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.execute($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $THEN
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawQuery($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawQuery($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $ELSE
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawInsert($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawInsert($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $ELSE
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawUpdate($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawUpdate($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $ELSE
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.rawDelete($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.rawDelete($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $ELSE
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern-either:
+                  - pattern: 'database.execute($COND ? $THEN : $ELSE)'
+                  - pattern: 'await database.execute($COND ? $THEN : $ELSE)'
+              - metavariable-pattern:
+                  metavariable: $ELSE
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          # Поиск тернарных операторов внутри конкатенации
+          - patterns:
+              - pattern: 'database.rawQuery($PREFIX + ($COND ? $THEN : $ELSE))'
+              - metavariable-pattern:
+                  metavariable: $THEN
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern: 'await database.rawQuery($PREFIX + ($COND ? $THEN : $ELSE))'
+              - metavariable-pattern:
+                  metavariable: $THEN
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern: 'database.rawQuery($PREFIX + ($COND ? $THEN : $ELSE))'
+              - metavariable-pattern:
+                  metavariable: $ELSE
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          - patterns:
+              - pattern: 'await database.rawQuery($PREFIX + ($COND ? $THEN : $ELSE))'
+              - metavariable-pattern:
+                  metavariable: $ELSE
+                  pattern-regex: .*\$[a-zA-Z_].*
+          
+          # Поиск прямых строк с $ в методах класса
+          - patterns:
+              - pattern-either:
+                  - pattern: 'db.rawQuery($QUERY)'
+                  - pattern: 'await db.rawQuery($QUERY)'
+                  - pattern: 'this.database.rawQuery($QUERY)'
+                  - pattern: 'await this.database.rawQuery($QUERY)'
+              - metavariable-pattern:
+                  metavariable: $QUERY
+                  pattern-regex: .*\$[a-zA-Z_].*
+      
+      # Исключения для безопасных случаев
+      - pattern-not: 'database.rawQuery($QUERY, [$PARAMS])'
+      - pattern-not: 'database.rawInsert($QUERY, [$PARAMS])'
+      - pattern-not: 'database.rawUpdate($QUERY, [$PARAMS])'
+      - pattern-not: 'database.rawDelete($QUERY, [$PARAMS])'
+      - pattern-not: 'database.execute($QUERY, [$PARAMS])'
+      - pattern-not: 'txn.rawInsert($QUERY, [$PARAMS])'
+      - pattern-not: 'txn.rawQuery($QUERY, [$PARAMS])'
+      - pattern-not: 'txn.rawUpdate($QUERY, [$PARAMS])'
+      - pattern-not: 'txn.rawDelete($QUERY, [$PARAMS])'
+      - pattern-not: 'txn.execute($QUERY, [$PARAMS])'
+      - pattern-not: 'batch.rawInsert($QUERY, [$PARAMS])'
+      - pattern-not: 'batch.rawQuery($QUERY, [$PARAMS])'
+      - pattern-not-regex: .*\?.*

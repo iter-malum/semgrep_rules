@@ -1,0 +1,122 @@
+rules:
+  - id: webview-vulnerabilities
+    message: 'WebView security issue detected! JavaScript enabled or unsafe configuration. Disable JavaScript if not needed and validate all inputs.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # WebViewController с включенным JavaScript
+          - pattern: 'WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)'
+          - pattern: 'setJavaScriptMode(JavaScriptMode.unrestricted)'
+          
+          # Добавление JavaScript каналов
+          - pattern: 'addJavaScriptChannel($NAME)'
+          - pattern: 'addJavaScriptChannel($NAME, onMessageReceived: $HANDLER)'
+          
+          # eval в JavaScript каналах
+          - pattern: 'addJavaScriptChannel($NAME, onMessageReceived: (msg) => eval(msg.message))'
+          
+          # Function конструктор
+          - pattern: 'addJavaScriptChannel($NAME, onMessageReceived: (msg) => Function(msg.message)())'
+          
+          # Process.run
+          - pattern: 'addJavaScriptChannel($NAME, onMessageReceived: (msg) => Process.run(msg.message, []))'
+          
+          # File.read
+          - pattern: 'addJavaScriptChannel($NAME, onMessageReceived: (msg) => File(msg.message).readAsString())'
+          
+          # Загрузка file:// URL
+          - patterns:
+              - pattern: 'loadRequest(Uri.parse($URL))'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"]file://.*[''"]'
+          
+          - patterns:
+              - pattern: 'loadRequest(Uri.parse($URL))'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"]content://.*[''"]'
+          
+          # Mixed content
+          - pattern: 'setMixedContentMode(MixedContentMode.alwaysAllow)'
+          
+          # DOM storage
+          - pattern: 'setDomStorageEnabled(true)'
+          
+          # Database
+          - pattern: 'setDatabaseEnabled(true)'
+          
+          # Небезопасная загрузка URL (динамические переменные)
+          - patterns:
+              - pattern: 'loadRequest(Uri.parse($URL))'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: 'userInput|endpoint|dynamicScript'
+          
+          # HTTP URL
+          - patterns:
+              - pattern: 'loadRequest(Uri.parse($URL))'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"]http://[^''"]*[''"]'
+          
+          # runJavaScript с непроверенным контентом
+          - patterns:
+              - pattern: 'runJavaScript($CODE)'
+              - metavariable-regex:
+                  metavariable: $CODE
+                  regex: 'userScript|dynamicScript|jsCode|code'
+          
+          - patterns:
+              - pattern: 'runJavaScriptReturningResult($CODE)'
+              - metavariable-regex:
+                  metavariable: $CODE
+                  regex: 'userScript|dynamicScript|jsCode|code'
+          
+          # NavigationDelegate без валидации
+          - pattern: 'NavigationDelegate(onNavigationRequest: (req) => NavigationDecision.navigate)'
+          - pattern: 'NavigationDelegate(onNavigationRequest: (_) => NavigationDecision.navigate)'
+          
+          # Комбинированные уязвимости с каскадным оператором
+          - pattern: 'WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..addJavaScriptChannel($NAME, onMessageReceived: $HANDLER)'
+          - pattern: 'WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..loadRequest($URL)'
+          - pattern: 'WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..setMixedContentMode(MixedContentMode.alwaysAllow)'
+          - pattern: 'WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..setDomStorageEnabled(true)'
+          - pattern: 'WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..setDatabaseEnabled(true)'
+          
+          # Условное включение JavaScript
+          - patterns:
+              - pattern: '$COND ? JavaScriptMode.unrestricted : JavaScriptMode.disabled'
+              - metavariable-regex:
+                  metavariable: $COND
+                  regex: 'config|shouldEnable|enable|flag'
+          
+          # Асинхронная инициализация с включенным JavaScript
+          - patterns:
+              - pattern: 'Future.delayed($DURATION)'
+              - pattern: 'setJavaScriptMode(JavaScriptMode.unrestricted)'
+          
+          # Custom схемы URL
+          - patterns:
+              - pattern: 'loadRequest(Uri.parse($URL))'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"]myapp://.*[''"]'
+          
+          # eval в строке
+          - pattern: 'runJavaScript(''eval("$code")'')'
+          - pattern: 'runJavaScript("eval(\"$code\")")'
+      
+      # Исключения для безопасных случаев
+      - pattern-not: 'setJavaScriptMode(JavaScriptMode.disabled)'
+      - pattern-not: 'setDomStorageEnabled(false)'
+      - pattern-not: 'setDatabaseEnabled(false)'
+      - pattern-not: 'setMixedContentMode(MixedContentMode.neverAllow)'
+      - pattern-not: 'NavigationDelegate(onNavigationRequest: (req) => NavigationDecision.prevent)'
+      - pattern-not-regex: '.*validate.*'
+      - pattern-not-regex: '.*allowed\.contains.*'
+      - pattern-not-regex: '.*@visibleForTesting.*'
+      - pattern-not-regex: '.*test.*'
+      - pattern-not-regex: '.*example.*'

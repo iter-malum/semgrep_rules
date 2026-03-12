@@ -1,0 +1,22 @@
+rules:
+  - id: disabled-obfuscation-makefile
+    message: 'Code obfuscation is disabled in Makefile! Build without --obfuscate flag makes the app vulnerable to reverse engineering.'
+    languages:
+      - generic
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          # Поиск команд flutter build без флага --obfuscate
+          - pattern-regex: '^[A-Za-z0-9_-]+:\s*\n(\s+[^\n]*\n)*?\s+flutter build (?!.*--obfuscate)(apk|appbundle|ios|ipa|linux|macos|windows|aar)'
+          
+          # Альтернативный вариант для однострочных команд
+          - pattern-regex: '^[A-Za-z0-9_-]+:\s+.*flutter build (?!.*--obfuscate)(apk|appbundle|ios|ipa|linux|macos|windows|aar)'
+          
+          # Для команд с табуляцией на следующей строке
+          - pattern-regex: '^[A-Za-z0-9_-]+:\s*\n\t+flutter build (?!.*--obfuscate)(apk|appbundle|ios|ipa|linux|macos|windows|aar)'
+    paths:
+      include:
+        - "Makefile"
+        - "*.mk"
+        - "makefile"
+        - "Makefile.*"

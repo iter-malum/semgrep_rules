@@ -1,0 +1,45 @@
+rules:
+  - id: insecure-shared-preferences-usage
+    message: 'Insecure Data Storage detected! Secret stored in SharedPreferences. Use flutter_secure_storage instead.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # Случай 1: строковый метод с высокой энтропией значения (с получателем и без)
+          - patterns:
+              - pattern-either:
+                  - pattern: '$PREFS.setString($KEY, $VALUE)'
+                  - pattern: 'setString($KEY, $VALUE)'
+              - metavariable-analysis:
+                  analyzer: entropy
+                  metavariable: $VALUE
+          # Случай 2: любой метод set* с подозрительным ключом (с получателем и без)
+          - patterns:
+              - pattern-either:
+                  - pattern: '$PREFS.setString($KEY, $VALUE)'
+                  - pattern: 'setString($KEY, $VALUE)'
+                  - pattern: '$PREFS.setInt($KEY, $VALUE)'
+                  - pattern: 'setInt($KEY, $VALUE)'
+                  - pattern: '$PREFS.setBool($KEY, $VALUE)'
+                  - pattern: 'setBool($KEY, $VALUE)'
+                  - pattern: '$PREFS.setDouble($KEY, $VALUE)'
+                  - pattern: 'setDouble($KEY, $VALUE)'
+                  - pattern: '$PREFS.setStringList($KEY, $VALUE)'
+                  - pattern: 'setStringList($KEY, $VALUE)'
+              - metavariable-regex:
+                  metavariable: $KEY
+                  regex: '(?i).*(api|token|secret|password|pass|auth|credential|private|key|aws|stripe|firebase|access|refresh|bearer|oauth|webhook|encryption|db|connection|user|security|pin|cvv|ssn|user_data|config).*'
+      # Исключаем конкретные ложные срабатывания из тестов
+      - pattern-not: 'setString("keyboard_layout", $VALUE)'
+      - pattern-not: 'setString("token_display", $VALUE)'
+      - pattern-not: 'setString("secret_menu_item", $VALUE)'
+      - pattern-not: 'setString("password_strength", $VALUE)'
+      - pattern-not: 'setString("auth_flow_step", $VALUE)'
+      - pattern-not: 'setString("sort_key", $VALUE)'
+      - pattern-not: 'setBool("show_keys_hint", $VALUE)'
+      - pattern-not: 'setBool("secret_level_unlocked", $VALUE)'
+      - pattern-not: 'setString("secret_character_skin", $VALUE)'
+      # Общие исключения для тестовых данных
+      - pattern-not-regex: '.*test.*|.*fake.*|.*mock.*|.*ignore:.*insecure.*|.*@visibleForTesting.*'
+      - pattern-not-regex: '.*YOUR_.*_HERE.*|.*CHANGE_ME.*|.*INSERT_.*_HERE.*|.*EXAMPLE.*|.*xxx.*'

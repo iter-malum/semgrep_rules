@@ -1,0 +1,11 @@
+rules:
+  - id: disabled-obfuscation-shell
+    message: 'Code obfuscation is disabled! Build without --obfuscate flag makes the app vulnerable to reverse engineering.'
+    languages:
+      - bash
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          # Поиск команд flutter build без обфускации
+          - pattern-regex: 'flutter build (?!.*--obfuscate).*(apk|appbundle|ios|ipa|linux|macos|windows|aar)'
+          - pattern-regex: 'flutter build (?!.*--split-debug-info).*(apk|appbundle|ios|ipa|linux|macos|windows|aar)'

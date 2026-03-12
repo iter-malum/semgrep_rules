@@ -1,0 +1,64 @@
+rules:
+  - id: platform-channel-injection
+    mode: taint
+    message: 'Platform channel injection vulnerability! User input flows into MethodChannel without validation.'
+    languages:
+      - dart
+    severity: ERROR
+    pattern-sources:
+      # Простые источники данных
+      - pattern: userInput
+      - pattern: userCommand
+      - pattern: userData
+      - pattern: userMap
+      - pattern: userList
+      - pattern: userName
+      - pattern: userEmail
+      - pattern: userPhone
+      - pattern: userRole
+      - pattern: qrData
+      - pattern: link
+      - pattern: data
+      - pattern: input
+      - pattern: value
+      - pattern: text
+      - pattern: content
+      - pattern: params
+      - pattern: query
+      - pattern: body
+      - pattern: response
+      - pattern: apiData
+      - pattern: clipboard
+      - pattern: prefs
+      - pattern: field
+      - pattern: message
+      - pattern: action
+      - pattern: command
+      - pattern: '_controller.text'
+      - pattern: 'snapshot.data'
+      - pattern: 'fetchFromApi()'
+      - pattern: 'queryDatabase()'
+      - pattern: 'readFile()'
+      - pattern: 'getSharedPrefs()'
+      
+    pattern-sinks:
+      # Простые снинки - MethodChannel вызовы
+      - pattern: '$CHANNEL.invokeMethod($METHOD, $ARGUMENTS)'
+      - pattern: 'platform.invokeMethod($METHOD, $ARGUMENTS)'
+      - pattern: 'MethodChannel($NAME).invokeMethod($METHOD, $ARGUMENTS)'
+      
+    pattern-sanitizers:
+      # Простые санитайзеры
+      - pattern: 'validateInput($DATA)'
+      - pattern: '_validate($DATA)'
+      - pattern: '_isValid($DATA)'
+      - pattern: 'sanitize($DATA)'
+      - pattern: '_sanitize($DATA)'
+      
+    metadata:
+      category: security
+      technology:
+        - flutter
+        - dart
+      cwe: 'CWE-94'
+      confidence: MEDIUM

@@ -1,0 +1,170 @@
+rules:
+  - id: insecure-deserialization-json
+    message: 'Insecure deserialization detected! Using jsonDecode on untrusted data without validation. Validate and sanitize all external input before deserialization.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # jsonDecode с непроверенными данными
+          - patterns:
+              - pattern-either:
+                  - pattern: 'jsonDecode($DATA)'
+                  - pattern: 'json.decode($DATA)'
+              - metavariable-regex:
+                  metavariable: $DATA
+                  regex: '(userInput|response\.body|request\.body|data|body|params|query|input|userData|apiResponse|serverResponse|externalData|untrustedData|jsonString|payload|rawData|content|message|event|arguments)'
+          
+          # jsonDecode с прямым пользовательским вводом
+          - pattern: 'jsonDecode(userInput)'
+          - pattern: 'json.decode(userInput)'
+          - pattern: 'jsonDecode(request.body)'
+          - pattern: 'json.decode(request.body)'
+          - pattern: 'jsonDecode(response.body)'
+          - pattern: 'json.decode(response.body)'
+          - pattern: 'jsonDecode(data)'
+          - pattern: 'json.decode(data)'
+          - pattern: 'jsonDecode(body)'
+          - pattern: 'json.decode(body)'
+          
+          # jsonDecode в HTTP обработчиках
+          - patterns:
+              - pattern: 'jsonDecode($REQUEST.body)'
+              - pattern-inside: |
+                  $FUNC($REQUEST, $RESPONSE) {
+                    ...
+                  }
+          
+          - patterns:
+              - pattern: 'json.decode($REQUEST.body)'
+              - pattern-inside: |
+                  $FUNC($REQUEST, $RESPONSE) {
+                    ...
+                  }
+          
+          # jsonDecode в простых функциях
+          - patterns:
+              - pattern: 'jsonDecode($PARAMS)'
+              - pattern-inside: |
+                  $FUNC($PARAMS) {
+                    ...
+                  }
+          
+          - patterns:
+              - pattern: 'json.decode($PARAMS)'
+              - pattern-inside: |
+                  $FUNC($PARAMS) {
+                    ...
+                  }
+          
+          # jsonDecode в WebSocket обработчиках
+          - patterns:
+              - pattern: 'jsonDecode(message)'
+              - pattern-inside: |
+                  $SOCKET.listen((message) {
+                    ...
+                  })
+          
+          - patterns:
+              - pattern: 'json.decode(message)'
+              - pattern-inside: |
+                  $SOCKET.listen((message) {
+                    ...
+                  })
+          
+          # jsonDecode в Stream обработчиках
+          - patterns:
+              - pattern: 'jsonDecode($DATA)'
+              - pattern-inside: |
+                  $STREAM.listen(($DATA) {
+                    ...
+                  })
+          
+          - patterns:
+              - pattern: 'json.decode($DATA)'
+              - pattern-inside: |
+                  $STREAM.listen(($DATA) {
+                    ...
+                  })
+          
+          # jsonDecode в Future обработчиках
+          - patterns:
+              - pattern: 'jsonDecode($DATA)'
+              - pattern-inside: |
+                  $FUTURE.then(($DATA) {
+                    ...
+                  })
+          
+          - patterns:
+              - pattern: 'json.decode($DATA)'
+              - pattern-inside: |
+                  $FUTURE.then(($DATA) {
+                    ...
+                  })
+          
+          # jsonDecode с данными из внешних источников
+          - patterns:
+              - pattern: 'jsonDecode($DATA)'
+              - metavariable-regex:
+                  metavariable: $DATA
+                  regex: '.*(http\.get|http\.post|http\.put|http\.delete|http\.patch|http\.read|http\.readBytes|dio\.get|dio\.post|dio\.put|dio\.delete|dio\.patch|fetch|request|api|socket|stream|file\.readAsString|file\.readAsBytes).*'
+          
+          - patterns:
+              - pattern: 'json.decode($DATA)'
+              - metavariable-regex:
+                  metavariable: $DATA
+                  regex: '.*(http\.get|http\.post|http\.put|http\.delete|http\.patch|http\.read|http\.readBytes|dio\.get|dio\.post|dio\.put|dio\.delete|dio\.patch|fetch|request|api|socket|stream|file\.readAsString|file\.readAsBytes).*'
+          
+          # jsonDecode без try-catch
+          - patterns:
+              - pattern: 'jsonDecode($DATA)'
+              - pattern-not-inside: |
+                  try {
+                    ...
+                  } catch ($E) {
+                    ...
+                  }
+          
+          - patterns:
+              - pattern: 'json.decode($DATA)'
+              - pattern-not-inside: |
+                  try {
+                    ...
+                  } catch ($E) {
+                    ...
+                  }
+          
+          # jsonDecode с данными из shared_preferences
+          - patterns:
+              - pattern: 'jsonDecode(prefs.getString($KEY))'
+              - pattern: 'json.decode(prefs.getString($KEY))'
+          
+          # jsonDecode с данными из файлов
+          - patterns:
+              - pattern: 'jsonDecode(file.readAsStringSync())'
+              - pattern: 'json.decode(file.readAsStringSync())'
+              - pattern: 'jsonDecode(await file.readAsString())'
+              - pattern: 'json.decode(await file.readAsString())'
+          
+          # jsonDecode в циклах
+          - patterns:
+              - pattern: 'jsonDecode($VAR)'
+              - pattern-inside: |
+                  for ($VAR in $LIST) {
+                    ...
+                  }
+          
+          - patterns:
+              - pattern: 'json.decode($VAR)'
+              - pattern-inside: |
+                  for ($VAR in $LIST) {
+                    ...
+                  }
+      
+      # Исключения для безопасных случаев
+      - pattern-not: 'jsonDecode("...")'
+      - pattern-not: 'json.decode("...")'
+      - pattern-not: 'jsonDecode(constant)'
+      - pattern-not: 'json.decode(constant)'
+      - pattern-not-regex: '.*//.*ignore:.*deserialization.*'
+      - pattern-not-regex: '.*@visibleForTesting.*'

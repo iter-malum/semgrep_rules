@@ -1,0 +1,238 @@
+rules:
+  - id: cleartext-communication-http-usage
+    message: 'Cleartext communication detected! Using HTTP instead of HTTPS. Use HTTPS for secure communication.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # http package: все методы с Uri.parse
+          - pattern: 'http.get(Uri.parse($URL))'
+          - pattern: 'http.post(Uri.parse($URL), $BODY)'
+          - pattern: 'http.put(Uri.parse($URL), $BODY)'
+          - pattern: 'http.delete(Uri.parse($URL))'
+          - pattern: 'http.patch(Uri.parse($URL), $BODY)'
+          - pattern: 'http.head(Uri.parse($URL))'
+          - pattern: 'http.options(Uri.parse($URL))'
+          - pattern: 'http.read(Uri.parse($URL))'
+          - pattern: 'http.readBytes(Uri.parse($URL))'
+
+          # http.Client методы
+          - pattern: 'http.Client().get(Uri.parse($URL))'
+          - pattern: 'http.Client().post(Uri.parse($URL), $BODY)'
+          - pattern: 'http.Client().put(Uri.parse($URL), $BODY)'
+          - pattern: 'http.Client().delete(Uri.parse($URL))'
+          - pattern: 'http.Client().patch(Uri.parse($URL), $BODY)'
+          - pattern: 'http.Client().head(Uri.parse($URL))'
+          - pattern: 'http.Client().send($REQUEST)'
+
+          # http.Request / http.MultipartRequest
+          - pattern: 'http.Request($METHOD, Uri.parse($URL))'
+          - pattern: 'http.MultipartRequest($METHOD, Uri.parse($URL))'
+
+          # Uri.http
+          - pattern: 'Uri.http($HOST, $PATH)'
+          - pattern: 'Uri.http($HOST, $PATH, $QUERY)'
+
+          # Uri constructor with scheme http
+          - patterns:
+              - pattern: 'Uri(scheme: $SCHEME, host: $HOST, path: $PATH)'
+              - metavariable-regex:
+                  metavariable: $SCHEME
+                  regex: '[''"]http[''"]'
+
+          # Uri.parse с http://
+          - patterns:
+              - pattern: 'Uri.parse($URL)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          # Dio
+          - pattern: 'Dio().get($URL)'
+          - pattern: 'Dio().post($URL, $DATA)'
+          - pattern: 'Dio().put($URL, $DATA)'
+          - pattern: 'Dio().delete($URL)'
+          - pattern: 'Dio().patch($URL, $DATA)'
+          - pattern: 'Dio(BaseOptions(baseUrl: $URL))'
+
+          # HttpClient (dart:io)
+          - pattern: 'HttpClient().getUrl(Uri.parse($URL))'
+          - pattern: 'HttpClient().postUrl(Uri.parse($URL))'
+          - pattern: 'HttpClient().putUrl(Uri.parse($URL))'
+          - pattern: 'HttpClient().deleteUrl(Uri.parse($URL))'
+          - pattern: 'HttpClient().patchUrl(Uri.parse($URL))'
+          - pattern: 'HttpClient().headUrl(Uri.parse($URL))'
+
+          # IOClient
+          - pattern: 'IOClient(HttpClient()).get(Uri.parse($URL))'
+
+          # WebSocket
+          - pattern: 'WebSocketChannel.connect(Uri.parse($URL))'
+
+          # WebSocket с ws://
+          - patterns:
+              - pattern: 'Uri.parse($URL)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"]ws://[^''"]*[''"]'
+
+          # Flutter Image.network
+          - pattern: 'Image.network($URL)'
+
+          # Flutter NetworkImage
+          - pattern: 'NetworkImage($URL)'
+
+          # Прямые строки с http://
+          - patterns:
+              - pattern: '$STRING'
+              - metavariable-regex:
+                  metavariable: $STRING
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          # Объявления переменных с http:// (без точки с запятой в паттерне)
+          - patterns:
+              - pattern: 'final $VAR = $URL'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'const $VAR = $URL'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'var $VAR = $URL'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: '$VAR = $URL'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          # Тернарные операторы
+          - patterns:
+              - pattern: '$COND ? $URL1 : $URL2'
+              - metavariable-regex:
+                  metavariable: $URL1
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: '$COND ? $URL1 : $URL2'
+              - metavariable-regex:
+                  metavariable: $URL2
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          # Конкатенация строк
+          - patterns:
+              - pattern: '$URL1 + $URL2'
+              - metavariable-regex:
+                  metavariable: $URL1
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: '$URL1 + $URL2'
+              - metavariable-regex:
+                  metavariable: $URL2
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: '''$PREFIX$URL'''
+              - metavariable-regex:
+                  metavariable: $PREFIX
+                  regex: 'http://'
+
+          - patterns:
+              - pattern: '"$PREFIX$URL"'
+              - metavariable-regex:
+                  metavariable: $PREFIX
+                  regex: 'http://'
+
+          # String.fromEnvironment
+          - patterns:
+              - pattern: 'String.fromEnvironment($KEY, defaultValue: $URL)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          # Переменные с http строкой, используемые в запросах
+          - patterns:
+              - pattern: 'final $VAR = $URL;'
+              - pattern: 'http.get($VAR)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'final $VAR = $URL;'
+              - pattern: 'http.post($VAR, $BODY)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'final $VAR = $URL;'
+              - pattern: 'dio.get($VAR)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'final $VAR = $URL;'
+              - pattern: 'dio.post($VAR, $DATA)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'final $VAR = $URL;'
+              - pattern: 'HttpClient().getUrl($VAR)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'var $VAR = $URL;'
+              - pattern: 'http.get($VAR)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: 'const $VAR = $URL;'
+              - pattern: 'http.get($VAR)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+          - patterns:
+              - pattern: '$VAR = $URL;'
+              - pattern: 'http.get($VAR)'
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: '[''"](http://[^''"]*)[''"]'
+
+      # Исключения для localhost и локальных IP
+      - pattern-not-regex: '.*localhost.*'
+      - pattern-not-regex: '.*127\.0\.0\.1.*'
+      - pattern-not-regex: '.*::1.*'
+      - pattern-not-regex: '.*192\.168\..*'
+      - pattern-not-regex: '.*10\..*'
+      - pattern-not-regex: '.*172\.(1[6-9]|2[0-9]|3[0-1])\..*'
+
+      # Исключения для не-сетевых контекстов
+      - pattern-not-regex: '.*print\(.*\).*'
+      - pattern-not-regex: '.*log\(.*\).*'
+      - pattern-not-regex: '.*TODO.*'
+      - pattern-not-regex: '.*replaceFirst.*'
+      - pattern-not-regex: '.*replaceAll.*'
+      - pattern-not-regex: '.*contains.*'
+      - pattern-not-regex: '.*startsWith.*'
+      - pattern-not-regex: '.*endsWith.*'
+      - pattern-not-regex: '.*RegExp.*'
+      - pattern-not-regex: '.*r[''"].*'

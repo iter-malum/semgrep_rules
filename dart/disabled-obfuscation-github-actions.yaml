@@ -1,0 +1,16 @@
+rules:
+  - id: disabled-obfuscation-github-actions
+    message: Code obfuscation is disabled in GitHub Actions! Build without
+      --obfuscate flag makes the app vulnerable to reverse engineering.
+    languages:
+      - yaml
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern-regex: run:.*flutter build
+              (?!.*--obfuscate).*(apk|appbundle|ios|ipa|linux|macos|windows|aar)
+          - pattern-regex: run:.*flutter build
+              (?!.*--split-debug-info).*(apk|appbundle|ios|ipa|linux|macos|windows|aar)
+      - pattern-inside: |
+          jobs:
+            ...

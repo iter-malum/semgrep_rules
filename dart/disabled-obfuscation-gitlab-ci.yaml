@@ -1,0 +1,11 @@
+rules:
+  - id: disabled-obfuscation-gitlab-ci
+    message: 'Code obfuscation is disabled in GitLab CI! Build without --obfuscate flag makes the app vulnerable to reverse engineering.'
+    languages:
+      - yaml
+    severity: WARNING
+    patterns:
+      - pattern-regex: '-.*flutter build (?!.*--obfuscate).*(apk|appbundle|ios|ipa|linux|macos|windows|aar)'
+      - pattern-inside: |
+          script:
+            ...

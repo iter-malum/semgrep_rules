@@ -1,0 +1,63 @@
+rules:
+  - id: command-injection-process-run
+    message: 'Command Injection vulnerability detected! User input flows into Process.run/start. Avoid using user input in system commands or sanitize input.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # Process.run с пользовательским вводом
+          - patterns:
+              - pattern-either:
+                  - pattern: 'Process.run($COMMAND, $ARGUMENTS)'
+                  - pattern: 'await Process.run($COMMAND, $ARGUMENTS)'
+                  - pattern: 'Process.runSync($COMMAND, $ARGUMENTS)'
+                  - pattern: 'Process.run($COMMAND, $ARGUMENTS, $OPTIONS)'
+                  - pattern: 'await Process.run($COMMAND, $ARGUMENTS, $OPTIONS)'
+                  - pattern: 'Process.runSync($COMMAND, $ARGUMENTS, $OPTIONS)'
+                  - pattern: 'Process.start($COMMAND, $ARGUMENTS)'
+                  - pattern: 'await Process.start($COMMAND, $ARGUMENTS)'
+                  - pattern: 'Process.start($COMMAND, $ARGUMENTS, $OPTIONS)'
+                  - pattern: 'await Process.start($COMMAND, $ARGUMENTS, $OPTIONS)'
+          
+          # Shell-команды с runInShell: true
+          - patterns:
+              - pattern-either:
+                  - pattern: 'Process.run($COMMAND, $ARGUMENTS, runInShell: true)'
+                  - pattern: 'await Process.run($COMMAND, $ARGUMENTS, runInShell: true)'
+                  - pattern: 'Process.start($COMMAND, $ARGUMENTS, runInShell: true)'
+                  - pattern: 'await Process.start($COMMAND, $ARGUMENTS, runInShell: true)'
+          
+          # Конкатенация в аргументах
+          - patterns:
+              - pattern-either:
+                  - pattern: 'Process.run($COMMAND, [$X + $Y])'
+                  - pattern: 'await Process.run($COMMAND, [$X + $Y])'
+                  - pattern: 'Process.start($COMMAND, [$X + $Y])'
+                  - pattern: 'await Process.start($COMMAND, [$X + $Y])'
+          
+          # Тернарные операторы
+          - pattern: 'Process.run($COND ? $THEN : $ELSE, $ARGUMENTS)'
+          - pattern: 'await Process.run($COND ? $THEN : $ELSE, $ARGUMENTS)'
+          - pattern: 'Process.start($COND ? $THEN : $ELSE, $ARGUMENTS)'
+          - pattern: 'await Process.start($COND ? $THEN : $ELSE, $ARGUMENTS)'
+          - pattern: 'Process.run($COMMAND, [$COND ? $THEN : $ELSE])'
+          - pattern: 'await Process.run($COMMAND, [$COND ? $THEN : $ELSE])'
+          - pattern: 'Process.start($COMMAND, [$COND ? $THEN : $ELSE])'
+          - pattern: 'await Process.start($COMMAND, [$COND ? $THEN : $ELSE])'
+          
+          # Stream/Future паттерны
+          - pattern: 'Stream.fromFuture(Process.run($COMMAND, $ARGUMENTS))'
+          - pattern: 'await Future.wait($LIST.map((e) => Process.run($COMMAND, [e])))'
+      
+      # Условие: аргументы содержат переменные (не хардкод)
+      - pattern-not: 'Process.run(..., ["..."])'
+      - pattern-not: 'Process.run(..., ["...", "..."])'
+      - pattern-not: 'Process.run(..., ["...", "...", "..."])'
+      - pattern-not: 'Process.run(..., [])'
+      - pattern-not: 'Process.run(..., const ["..."])'
+      - pattern-not: 'Process.run(..., const ["...", "..."])'
+      - pattern-not: 'Process.run(..., <String>["..."])'
+      - pattern-not: 'Process.run(..., <String>["...", "..."])'
+      - pattern-not: 'Process.run(..., ["...", $VAR])'
+      - pattern-not: 'Process.run(..., [$VAR, "..."])'

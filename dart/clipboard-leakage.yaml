@@ -1,0 +1,24 @@
+rules:
+  - id: clipboard-leakage
+    message: 'Clipboard leakage detected! Sensitive data ($KEYWORD) is copied to clipboard. Avoid storing passwords, tokens, or personal data in clipboard.'
+    languages:
+      - dart
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: 'Clipboard.setData(ClipboardData(text: $DATA))'
+          - pattern: 'await Clipboard.setData(ClipboardData(text: $DATA))'
+          - pattern: '$HELPER.copyToClipboard($DATA)'
+          - pattern: '$STRING.copyToClipboard()'
+          - pattern: 'ClipboardHelper.copySecret($DATA)'
+          - pattern: '$DATA.copyToClipboard()'
+          - pattern: '$DATA.copyToClipboard(...)'
+          
+      - metavariable-regex:
+          metavariable: $DATA
+          regex: '(?i).*(password|pass|pwd|token|auth|credential|secret|api.?key|private.?key|access.?token|refresh.?token|bearer|jwt|session|login|key|certificate|pem|p12|credit|card|cvv|ccv|cvc|pan|bank|account|routing|swift|iban|bic|payment|transaction|ssn|sin|tin|passport|driver.?license|birth|dob|address|phone|mobile|email|fullname|lastname|firstname|medical|health|patient|diagnosis|treatment|prescription|insurance|hipaa|mnemonic|seed|phrase|recovery|backup|encryption|decrypt|cipher|hash|salt|iv|nonce|sudo|root|admin|master|superuser|service.?account|client.?id|client.?secret|tenant|subscription|pin|code|otp|mfa|2fa|verification|confirm|confidential|proprietary|trade.?secret|internal|restricted|nda).*'
+
+      - pattern-not-regex: '.*//.*ignore:.*clipboard.*'
+      - pattern-not-regex: '.*@visibleForTesting.*'
+      - pattern-not-regex: '.*kReleaseMode.*'
+      - pattern-not-regex: '.*PUBLIC_TEXT.*|.*USER_NAME.*|.*APP_VERSION.*'
