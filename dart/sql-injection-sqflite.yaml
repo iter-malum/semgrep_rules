@@ -1,5 +1,11 @@
 rules:
   - id: sql-injection-sqflite
+    metadata:
+      category: security
+      technology:
+        - dart
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>
     message: 'SQL Injection vulnerability detected! String concatenation or interpolation in SQL query. Use parameterized queries with ? placeholders instead.'
     languages:
       - dart

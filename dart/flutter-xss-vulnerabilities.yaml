@@ -1,0 +1,54 @@
+rules:
+  - id: flutter-xss-vulnerabilities
+    message: 'XSS vulnerability detected! Unsafe WebView/HTML usage with untrusted data.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # XSS через runJavaScript/evaluateJavascript
+          - pattern: '$CONTROLLER.runJavaScript($JS_CODE)'
+          - pattern: '$CONTROLLER.evaluateJavascript($JS_CODE)'
+          
+          # XSS через loadUrl с javascript: схемой
+          - pattern: '$CONTROLLER.loadUrl($URL)'
+          - pattern: 'WebView(initialUrl: $URL)'
+          - pattern: 'InAppWebView(initialUrl: $URL)'
+          
+          # XSS через loadHtmlString
+          - pattern: '$CONTROLLER.loadHtmlString($HTML)'
+          
+          # XSS через Html виджет
+          - pattern: 'Html(data: $HTML)'
+          - pattern: 'HtmlWidget($HTML)'
+          
+          # XSS через postMessage
+          - pattern: '$CONTROLLER.postMessage($DATA)'
+          
+          # XSS через JavaScript интерфейсы
+          - pattern: '$CONTROLLER.addJavaScriptHandler(handlerName: $NAME, callback: $CALLBACK)'
+          
+          # XSS через опасные опции WebView
+          - pattern: 'AndroidInAppWebViewOptions(allowUniversalAccessFromFileURLs: true)'
+          - pattern: 'IOSInAppWebViewOptions(allowUniversalAccessFromFileURLs: true)'
+      
+      # Исключения для безопасных случаев
+      - pattern-not: 'WebView(initialUrl: "https://$DOMAIN")'
+      - pattern-not: 'Html(data: "<h1>$TEXT</h1>")'
+      - pattern-not: '$CONTROLLER.loadUrl("https://$DOMAIN/$PATH")'
+      - pattern-not-regex: '.*Uri\.parse\(.*https?://.*\).*'
+      
+    metadata:
+      references:
+        - 'https://pub.dev/packages/webview_flutter'
+        - 'https://pub.dev/packages/flutter_inappwebview'
+        - 'https://pub.dev/packages/flutter_html'
+        - 'https://owasp.org/www-community/attacks/xss/'
+      category: security
+      technology:
+        - flutter
+        - dart
+        - webview
+      cwe: 'CWE-79'
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>

@@ -1,5 +1,11 @@
 rules:
   - id: weak-cryptography-dart
+    metadata:
+      category: security
+      technology:
+        - dart
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>
     message: 'Weak cryptography detected! Using $ALGORITHM which is considered insecure. Use stronger algorithms like AES-256-GCM, SHA-256, or SHA-512 instead.'
     languages:
       - dart

@@ -1,5 +1,9 @@
 rules:
   - id: disabled-obfuscation-github-actions
+    metadata:
+      category: security
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH
     message: Code obfuscation is disabled in GitHub Actions! Build without
       --obfuscate flag makes the app vulnerable to reverse engineering.
     languages:

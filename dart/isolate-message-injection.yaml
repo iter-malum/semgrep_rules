@@ -1,0 +1,39 @@
+rules:
+  - id: isolate-message-injection
+    message: 'Potential isolate message injection vulnerability. Untrusted data flows into isolate communication without validation.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # Отправка данных в изоляты
+          - pattern: 'Isolate.spawn($FUNC, $DATA)'
+          - pattern: '$SEND_PORT.send($DATA)'
+          - pattern: 'sendPort.send($DATA)'
+          - pattern: '_sendPort.send($DATA)'
+          
+          # ReceivePort обработчики
+          - pattern: '$RECEIVE_PORT.listen($HANDLER)'
+          - pattern: '$RECEIVE_PORT.first.then($HANDLER)'
+          - pattern: '$RECEIVE_PORT.take($COUNT).listen($HANDLER)'
+          
+          # RawReceivePort
+          - pattern: 'RawReceivePort($HANDLER)'
+          - pattern: '$PORT.handler = $HANDLER'
+          
+          # Функции-обработчики
+          - pattern: '_processMessage($DATA)'
+          - pattern: '_handleMessage($DATA)'
+          - pattern: '_processRawMessage($DATA)'
+          - pattern: '_handleUnsafeMessage($DATA)'
+          - pattern: '_processUnsafeData($DATA)'
+    metadata:
+      references:
+        - 'https://dart.dev/language/isolates'
+      category: security
+      technology:
+        - dart
+        - isolates
+      cwe: 'CWE-502'
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>

@@ -1,5 +1,9 @@
 rules:
   - id: debug-mode-production-security
+    metadata:
+      category: security
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH
     message: 'Debug mode security bypass detected! Using kDebugMode in security-critical checks. Debug mode should never bypass authentication, authorization, validation, or other security controls in production code.'
     languages:
       - dart

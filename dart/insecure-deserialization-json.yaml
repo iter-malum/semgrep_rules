@@ -1,5 +1,11 @@
 rules:
   - id: insecure-deserialization-json
+    metadata:
+      category: security
+      technology:
+        - dart
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>
     message: 'Insecure deserialization detected! Using jsonDecode on untrusted data without validation. Validate and sanitize all external input before deserialization.'
     languages:
       - dart

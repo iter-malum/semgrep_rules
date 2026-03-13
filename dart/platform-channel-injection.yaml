@@ -62,3 +62,4 @@ rules:
         - dart
       cwe: 'CWE-94'
       confidence: MEDIUM
+      author: Victor 4ernyak <https://t.me/iter_malum>

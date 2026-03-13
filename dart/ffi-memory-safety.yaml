@@ -1,0 +1,42 @@
+rules:
+  - id: ffi-memory-safety
+    message: 'FFI memory safety issue detected! Data flows into native code without proper validation. Always validate input before FFI calls.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # toNativeUtf8 вызовы с непроверенными данными
+          - patterns:
+              - pattern: '$DATA.toNativeUtf8()'
+              - metavariable-regex:
+                  metavariable: $DATA
+                  regex: '(?i).*(userInput|userData|input|data|query|content|text|value).*'
+          
+          # Аллокации памяти
+          - pattern: 'malloc.allocate($SIZE)'
+          - pattern: 'calloc<$TYPE>($COUNT)'
+          
+          # Опасные C-функции
+          - pattern: 'strcpy($DST, $SRC)'
+          - pattern: 'memcpy($DST, $SRC, $SIZE)'
+          - pattern: 'strdup($SRC)'
+          
+          # FFI вызовы с данными
+          - patterns:
+              - pattern: '$DYLIB.lookupFunction<$NATIVE_TYPE, $DART_TYPE>($FUNC_NAME)'
+              - pattern: '$FUNC($PTR)'
+              - metavariable-regex:
+                  metavariable: $PTR
+                  regex: '.*(toNativeUtf8|calloc|malloc).*'
+    metadata:
+      references:
+        - 'https://dart.dev/interop/c-interop'
+        - 'https://pub.dev/packages/ffi'
+      category: security
+      technology:
+        - dart
+        - ffi
+      cwe: 'CWE-119'
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>

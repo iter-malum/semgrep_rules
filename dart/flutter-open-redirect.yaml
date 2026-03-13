@@ -1,0 +1,100 @@
+rules:
+  - id: flutter-open-redirect
+    message: 'Open Redirect vulnerability detected! Untrusted data flows into URL redirection without validation.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # 1. Open Redirect через URL launcher
+          - pattern: 'launch($URL)'
+          - pattern: 'await launch($URL)'
+          - pattern: 'launchUrl($URL)'
+          - pattern: 'await launchUrl($URL)'
+          - pattern: 'canLaunch($URL)'
+          - pattern: 'url_launcher.launch($URL)'
+          
+          # 2. Open Redirect через WebView
+          - pattern: '$CONTROLLER.loadUrl($URL)'
+          - pattern: 'WebView(initialUrl: $URL)'
+          - pattern: 'InAppWebView(initialUrl: $URL)'
+          - pattern: '$CONTROLLER.loadUrl(urlRequest: URLRequest(url: $URL))'
+          
+          # 3. Open Redirect через Navigation
+          - pattern: 'Navigator.pushNamed($URL)'
+          - pattern: 'Navigator.pushReplacementNamed($URL)'
+          - pattern: 'context.router.push($URL)'
+          - pattern: 'context.router.replace($URL)'
+          
+          # 4. Open Redirect через Deep Links (UniLinks, AppLinks)
+          - pattern: 'getInitialLink()'
+          - pattern: 'getLatestLink()'
+          - pattern: 'getInitialUri()'
+          - pattern: 'UriLinkHandler($CALLBACK)'
+          - pattern: 'linkStream.listen($CALLBACK)'
+          - pattern: 'onLink($CALLBACK)'
+          - pattern: 'getLinksStream().listen($CALLBACK)'
+          
+          # 5. Open Redirect через OAuth редиректы
+          - pattern: '$OAUTH.getAuthorizationUrl($URL)'
+          - pattern: '$OAUTH.authorize($URL)'
+          - pattern: '$OAUTH.authenticate(redirectUrl: $URL)'
+          - pattern: '$AUTH.login(redirectUri: $URL)'
+          - pattern: '$AUTH.authorize(redirectUri: $URL)'
+          
+          # 6. Open Redirect через HTTP редиректы
+          - pattern: 'http.get($URL)'
+          - pattern: 'http.post($URL, $BODY)'
+          - pattern: 'dio.get($URL)'
+          - pattern: 'dio.post($URL, $DATA)'
+          - pattern: '$CLIENT.getUrl($URI)'
+          
+          # 7. Open Redirect через браузер
+          - pattern: 'openBrowser($URL)'
+          - pattern: 'openUrl($URL)'
+          - pattern: 'openInBrowser($URL)'
+          - pattern: 'openExternalUrl($URL)'
+          
+          # 8. Open Redirect через встроенный браузер
+          - pattern: 'SafariView.launch($URL)'
+          - pattern: 'ChromeSafariBrowser.open($URL)'
+          - pattern: 'CustomTabs.launch($URL)'
+          
+          # 9. Open Redirect через WebView с редиректом
+          - patterns:
+              - pattern: |
+                  WebView(
+                    navigationDelegate: ($REQUEST) {
+                      return NavigationDecision.$DECISION;
+                    },
+                  )
+              - pattern: '$CONTROLLER.loadUrl($REQUEST.url)'
+          
+          # 10. Open Redirect через OAuth callback
+          - pattern: '$OAUTH.handleRedirect($URI)'
+          - pattern: '$AUTH.handleCallback($URI)'
+          
+      # Исключения для безопасных случаев
+      - pattern-not: 'launch("https://$DOMAIN")'
+      - pattern-not: 'launchUrl(Uri.parse("https://$DOMAIN"))'
+      - pattern-not: 'WebView(initialUrl: "https://$DOMAIN")'
+      - pattern-not: '$CONTROLLER.loadUrl("https://$DOMAIN/$PATH")'
+      - pattern-not-regex: '.*Uri\.parse\(.*https?://.*\).*'
+      
+    metadata:
+      references:
+        - 'https://pub.dev/packages/url_launcher'
+        - 'https://pub.dev/packages/webview_flutter'
+        - 'https://pub.dev/packages/uni_links'
+        - 'https://pub.dev/packages/app_links'
+        - 'https://pub.dev/packages/oauth2_client'
+        - 'https://owasp.org/www-community/attacks/Open_Redirect'
+      category: security
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      technology:
+        - flutter
+        - dart
+        - deeplinks
+        - oauth
+      cwe: 'CWE-601: URL Redirection to Untrusted Site'
+      confidence: HIGH

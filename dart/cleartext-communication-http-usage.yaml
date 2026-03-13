@@ -1,5 +1,9 @@
 rules:
   - id: cleartext-communication-http-usage
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH
+      category: security
     message: 'Cleartext communication detected! Using HTTP instead of HTTPS. Use HTTPS for secure communication.'
     languages:
       - dart

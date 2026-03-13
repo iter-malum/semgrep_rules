@@ -1,5 +1,9 @@
 rules:
   - id: command-injection-process-run
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH
+      category: security
     message: 'Command Injection vulnerability detected! User input flows into Process.run/start. Avoid using user input in system commands or sanitize input.'
     languages:
       - dart

@@ -1,5 +1,9 @@
 rules:
   - id: clipboard-leakage
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
     message: 'Clipboard leakage detected! Sensitive data ($KEYWORD) is copied to clipboard. Avoid storing passwords, tokens, or personal data in clipboard.'
     languages:
       - dart

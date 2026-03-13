@@ -1,5 +1,11 @@
 rules:
   - id: insecure-shared-preferences-usage
+    metadata:
+      category: security
+      technology:
+        - dart
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>
     message: 'Insecure Data Storage detected! Secret stored in SharedPreferences. Use flutter_secure_storage instead.'
     languages:
       - dart

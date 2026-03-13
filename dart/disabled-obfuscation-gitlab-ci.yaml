@@ -1,5 +1,9 @@
 rules:
   - id: disabled-obfuscation-gitlab-ci
+    metadata:
+      category: security
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH
     message: 'Code obfuscation is disabled in GitLab CI! Build without --obfuscate flag makes the app vulnerable to reverse engineering.'
     languages:
       - yaml

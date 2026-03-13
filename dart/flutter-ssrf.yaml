@@ -1,0 +1,138 @@
+rules:
+  - id: flutter-ssrf
+    message: 'SSRF (Server-Side Request Forgery) vulnerability detected! Untrusted data flows into server-side request without validation.'
+    languages:
+      - dart
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          # 1. SSRF через HTTP клиенты
+          - pattern: '$CLIENT.get($URL)'
+          - pattern: '$CLIENT.post($URL, $BODY)'
+          - pattern: '$CLIENT.put($URL, $BODY)'
+          - pattern: '$CLIENT.delete($URL)'
+          - pattern: '$CLIENT.patch($URL, $BODY)'
+          - pattern: '$CLIENT.head($URL)'
+          - pattern: '$CLIENT.options($URL)'
+          - pattern: '$CLIENT.read($URL)'
+          - pattern: '$CLIENT.readBytes($URL)'
+          
+          # 2. SSRF через Dio
+          - pattern: 'Dio().get($URL)'
+          - pattern: 'Dio().post($URL, $DATA)'
+          - pattern: 'Dio().put($URL, $DATA)'
+          - pattern: 'Dio().delete($URL)'
+          - pattern: 'Dio().patch($URL, $DATA)'
+          - pattern: 'dio.get($URL)'
+          - pattern: 'dio.post($URL, $DATA)'
+          - pattern: 'dio.put($URL, $DATA)'
+          - pattern: 'dio.delete($URL)'
+          
+          # 3. SSRF через HttpClient (dart:io)
+          - pattern: 'HttpClient().getUrl($URI)'
+          - pattern: 'HttpClient().postUrl($URI)'
+          - pattern: 'HttpClient().putUrl($URI)'
+          - pattern: 'HttpClient().deleteUrl($URI)'
+          - pattern: 'HttpClient().patchUrl($URI)'
+          - pattern: 'HttpClient().headUrl($URI)'
+          - pattern: '$CLIENT.getUrl($URI)'
+          - pattern: '$CLIENT.postUrl($URI)'
+          
+          # 4. SSRF через WebSocket
+          - pattern: 'WebSocket.connect($URL)'
+          - pattern: 'WebSocketChannel.connect($URL)'
+          - pattern: 'IOWebSocketChannel.connect($URL)'
+          - pattern: '$WEBSOCKET.connect($URL)'
+          - pattern: '$CHANNEL.connect($URL)'
+          
+          # 5. SSRF через Image.network
+          - pattern: 'Image.network($URL)'
+          - pattern: 'FadeInImage.network($URL, $PLACEHOLDER)'
+          - pattern: 'NetworkImage($URL)'
+          - pattern: 'CachedNetworkImage(imageUrl: $URL)'
+          - pattern: 'Image.memory($BYTES, $URL)'
+          - pattern: 'Image.network($URL, headers: $HEADERS)'
+          
+          # 6. SSRF через загрузку файлов
+          - pattern: 'File($PATH).writeAsBytes($BYTES)'
+          - pattern: 'File($PATH).writeAsString($CONTENT)'
+          - pattern: '$CLIENT.download($URL, $SAVE_PATH)'
+          - pattern: 'dio.download($URL, $SAVE_PATH)'
+          
+          # 7. SSRF через Uri.parse/Http
+          - pattern: 'Uri.parse($URL)'
+          - pattern: 'Uri.https($HOST, $PATH)'
+          - pattern: 'Uri.http($HOST, $PATH)'
+          
+          # 8. SSRF через HTTP пакеты
+          - pattern: 'http.get($URL)'
+          - pattern: 'http.post($URL, $BODY)'
+          - pattern: 'http.put($URL, $BODY)'
+          - pattern: 'http.delete($URL)'
+          - pattern: 'http.patch($URL, $BODY)'
+          - pattern: 'http.head($URL)'
+          - pattern: 'http.options($URL)'
+          - pattern: 'http.read($URL)'
+          - pattern: 'http.readBytes($URL)'
+          
+          # 9. SSRF через Request объекты
+          - pattern: 'http.Request($METHOD, $URL)'
+          - pattern: 'http.MultipartRequest($METHOD, $URL)'
+          - pattern: '$REQUEST.send()'
+          
+          # 10. SSRF через StreamedRequest
+          - pattern: 'http.StreamedRequest($METHOD, $URL)'
+          - pattern: '$STREAMED_REQUEST.send()'
+          
+          # 11. SSRF через WebSocket в составе HTTP
+          - pattern: 'WebSocket.connect(Uri.parse($URL))'
+          - pattern: 'WebSocketChannel.connect(Uri.parse($URL))'
+          - pattern: 'IOWebSocketChannel.connect(Uri.parse($URL))'
+          
+          # 12. SSRF через WebSocket с заголовками
+          - pattern: 'WebSocket.connect($URL, headers: $HEADERS)'
+          - pattern: 'WebSocketChannel.connect($URL, headers: $HEADERS)'
+          
+          # 13. SSRF через GraphQL клиенты
+          - pattern: '$GRAPHQL.query($URL, $OPTIONS)'
+          - pattern: '$GRAPHQL.mutate($URL, $OPTIONS)'
+          - pattern: 'graphql.Client(endpoint: $URL)'
+          
+          # 14. SSRF через WebSockets с протоколами
+          - pattern: 'WebSocket.connect("ws://$HOST")'
+          - pattern: 'WebSocket.connect("wss://$HOST")'
+          - pattern: 'IOWebSocketChannel.connect("ws://$HOST")'
+          
+          # 15. SSRF через WebSocket клиенты
+          - pattern: 'WebSocketClient($URL)'
+          - pattern: 'WebSocketChannel($URL)'
+          - pattern: 'WebSocket.connect($URL).then($CALLBACK)'
+          
+      # Исключения для безопасных случаев
+      - pattern-not: 'Image.network("https://$DOMAIN/$PATH")'
+      - pattern-not: 'http.get("https://$DOMAIN")'
+      - pattern-not: 'Dio().get("https://$DOMAIN")'
+      - pattern-not: 'WebSocket.connect("wss://$DOMAIN")'
+      - pattern-not-regex: '.*Uri\.parse\(.*https?://.*\).*'
+      - pattern-not-regex: '.*localhost.*'
+      - pattern-not-regex: '.*127\.0\.0\.1.*'
+      - pattern-not-regex: '.*192\.168\..*'
+      - pattern-not-regex: '.*10\..*'
+      - pattern-not-regex: '.*::1.*'
+      
+    metadata:
+      references:
+        - 'https://pub.dev/packages/http'
+        - 'https://pub.dev/packages/dio'
+        - 'https://pub.dev/packages/web_socket_channel'
+        - 'https://api.flutter.dev/flutter/dart-io/HttpClient-class.html'
+        - 'https://owasp.org/www-community/attacks/Server_Side_Request_Forgery'
+      category: security
+      technology:
+        - flutter
+        - dart
+        - http
+        - websocket
+      cwe: 'CWE-918: Server-Side Request Forgery (SSRF)'
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH

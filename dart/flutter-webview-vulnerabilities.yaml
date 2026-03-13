@@ -1,5 +1,9 @@
 rules:
   - id: webview-vulnerabilities
+    metadata:
+      category: security
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: HIGH
     message: 'WebView security issue detected! JavaScript enabled or unsafe configuration. Disable JavaScript if not needed and validate all inputs.'
     languages:
       - dart

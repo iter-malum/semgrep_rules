@@ -1,5 +1,11 @@
 rules:
   - id: missing-ssl-pinning
+    metadata:
+      category: security
+      technology:
+        - dart
+      confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>
     message: Missing SSL Pinning detected! Application is vulnerable to MITM
       attacks. Implement SSL pinning using certificate or public key pinning.
     languages:

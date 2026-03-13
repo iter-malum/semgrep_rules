@@ -89,3 +89,4 @@ rules:
         - dart
       cwe: 'CWE-79: Improper Neutralization of Input During Web Page Generation'
       confidence: HIGH
+      author: Victor 4ernyak <https://t.me/iter_malum>
