@@ -1,0 +1,163 @@
+# yamllint disable
+# License: MIT
+# yamllint enable
+---
+rules:
+- id: rule-EFCoreInterpolatedStringInjection
+  metadata:
+    author: Victor 4ernyak <https://t.me/iter_malum>
+    confidence: "HIGH"
+    category: "security"
+    cwe:
+      - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+    owasp:
+      - "A1:2017-Injection"
+      - "A03:2021-Injection"
+    references:
+      - "https://docs.microsoft.com/en-us/ef/core/querying/raw-sql#passing-parameters"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+    technology:
+      - "csharp"
+      - "entity-framework-core"
+    vulnerability_class:
+      - "SQL Injection"
+  languages:
+    - "csharp"
+  severity: "ERROR"
+  message: "Обнаружено опасное использование интерполированных строк в Entity Framework Core. Методы FromSqlInterpolated и ExecuteSqlInterpolated ожидают FormattableString для безопасной параметризации. Если передать обычную строку (даже созданную через интерполяцию), EF Core не может параметризовать запрос, что приводит к SQL инъекции. Ошибка: сохранение интерполированной строки в переменную string, вызов ToString() на интерполированной строке, использование StringBuilder, string.Format, конкатенации строк или String.Concat перед передачей в FromSqlRaw/FromSqlInterpolated/ExecuteSqlRaw/ExecuteSqlInterpolated. Исправление: передавайте интерполированную строку напрямую в FromSqlInterpolated без сохранения в string переменную, используйте явный тип FormattableString или используйте FromSqlRaw с параметрами. Никогда не сохраняйте интерполированные SQL запросы в переменные типа string перед передачей в *Interpolated методы."
+  patterns:
+    - pattern-either:
+        # Паттерн 1: FromSqlRaw с интерполированной строкой напрямую
+        - patterns:
+            - pattern: |
+                $CONTEXT.$ENTITY.FromSqlRaw($"...", ...)
+            - pattern-not: |
+                $CONTEXT.$ENTITY.FromSqlRaw($"...", $PARAM, ...)
+        # Паттерн 2: FromSqlRaw с переменной string (любая переменная)
+        - patterns:
+            - pattern: |
+                $CONTEXT.$ENTITY.FromSqlRaw($ARG, ...)
+            - pattern-not: |
+                $CONTEXT.$ENTITY.FromSqlRaw("...", ...)
+            - pattern-not: |
+                $CONTEXT.$ENTITY.FromSqlRaw($ARG, $PARAM, ...)
+        # Паттерн 3: FromSqlInterpolated с переменной string
+        - patterns:
+            - pattern: |
+                $CONTEXT.$ENTITY.FromSqlInterpolated($ARG, ...)
+            - pattern-not: |
+                $CONTEXT.$ENTITY.FromSqlInterpolated($"...", ...)
+        # Паттерн 4: ExecuteSqlInterpolated с переменной string
+        - patterns:
+            - pattern: |
+                $CONTEXT.Database.ExecuteSqlInterpolated($ARG, ...)
+            - pattern-not: |
+                $CONTEXT.Database.ExecuteSqlInterpolated($"...", ...)
+        # Паттерн 5: ExecuteSqlRaw с интерполированной строкой
+        - patterns:
+            - pattern: |
+                $CONTEXT.Database.ExecuteSqlRaw($"...", ...)
+            - pattern-not: |
+                $CONTEXT.Database.ExecuteSqlRaw($"...", $PARAM, ...)
+        # Паттерн 6: ExecuteSqlRaw с переменной string из интерполяции
+        - patterns:
+            - pattern: |
+                string $VAR = $"$VALUE";
+                ...
+                $CONTEXT.Database.ExecuteSqlRaw($VAR, ...)
+        # Паттерн 7: ExecuteSqlRaw с StringBuilder
+        - patterns:
+            - pattern-either:
+                - pattern: |
+                    var $SB = new System.Text.StringBuilder();
+                    $SB.Append($...ARGS);
+                    ...
+                    $CONTEXT.Database.ExecuteSqlRaw($SB.ToString(), ...)
+                - pattern: |
+                    var $SB = new StringBuilder();
+                    $SB.Append($...ARGS);
+                    ...
+                    $CONTEXT.Database.ExecuteSqlRaw($SB.ToString(), ...)
+        # Паттерн 8: FromSqlRaw с StringBuilder
+        - patterns:
+            - pattern-either:
+                - pattern: |
+                    var $SB = new System.Text.StringBuilder();
+                    $SB.Append($...ARGS);
+                    ...
+                    $CONTEXT.$ENTITY.FromSqlRaw($SB.ToString(), ...)
+                - pattern: |
+                    var $SB = new StringBuilder();
+                    $SB.Append($...ARGS);
+                    ...
+                    $CONTEXT.$ENTITY.FromSqlRaw($SB.ToString(), ...)
+        # Паттерн 9: FromSqlRaw с string.Format
+        - patterns:
+            - pattern: |
+                $CONTEXT.$ENTITY.FromSqlRaw(string.Format($FORMAT, $...ARGS), ...)
+        # Паттерн 10: FromSqlRaw с конкатенацией
+        - patterns:
+            - pattern: |
+                $CONTEXT.$ENTITY.FromSqlRaw($STR1 + $STR2, ...)
+        # Паттерн 11: FromSqlRaw с переменной string из интерполяции
+        - patterns:
+            - pattern: |
+                string $VAR = $"$VALUE";
+                ...
+                $CONTEXT.$ENTITY.FromSqlRaw($VAR, ...)
+        # Паттерн 12: FromSqlInterpolated с кастом в string
+        - patterns:
+            - pattern: |
+                $CONTEXT.$ENTITY.FromSqlInterpolated((string)$"...", ...)
+        # Паттерн 13: FromSqlInterpolated с ToString()
+        - patterns:
+            - pattern: |
+                $CONTEXT.$ENTITY.FromSqlInterpolated($INTERPOLATED.ToString(), ...)
+        # Паттерн 14: FromSqlRaw с переменной object из интерполяции
+        - patterns:
+            - pattern: |
+                object $OBJ = $"$VALUE";
+                ...
+                $CONTEXT.$ENTITY.FromSqlRaw($OBJ, ...)
+        # Паттерн 15: FromSqlInterpolated с переменной object из интерполяции
+        - patterns:
+            - pattern: |
+                object $OBJ = $"$VALUE";
+                ...
+                $CONTEXT.$ENTITY.FromSqlInterpolated($OBJ, ...)
+        # Паттерн 16: ExecuteSqlRaw с string.Format
+        - patterns:
+            - pattern: |
+                $CONTEXT.Database.ExecuteSqlRaw(string.Format($FORMAT, $...ARGS), ...)
+        # Паттерн 17: ExecuteSqlRaw с конкатенацией
+        - patterns:
+            - pattern: |
+                $CONTEXT.Database.ExecuteSqlRaw($STR1 + $STR2, ...)
+        # Паттерн 18: FromSqlInterpolated с переменной string из конкатенации
+        - patterns:
+            - pattern: |
+                string $VAR = $STR1 + $STR2;
+                ...
+                $CONTEXT.$ENTITY.FromSqlInterpolated($VAR, ...)
+        # Паттерн 19: FromSqlInterpolated с переменной string из string.Format
+        - patterns:
+            - pattern: |
+                string $VAR = string.Format($FORMAT, $...ARGS);
+                ...
+                $CONTEXT.$ENTITY.FromSqlInterpolated($VAR, ...)
+        # Паттерн 20: FromSqlInterpolated с переменной string из StringBuilder
+        - patterns:
+            - pattern: |
+                var $SB = new StringBuilder();
+                $SB.Append($...ARGS);
+                string $VAR = $SB.ToString();
+                ...
+                $CONTEXT.$ENTITY.FromSqlInterpolated($VAR, ...)
+    - pattern-not-inside: |
+        #if DEBUG
+        ...
+        #endif
+    - pattern-not: |
+        FormattableString $FS = $"$VALUE";
+        string $SQL = $FS.ToString();
+        $CONTEXT.$ENTITY.FromSqlRaw($SQL, ...)

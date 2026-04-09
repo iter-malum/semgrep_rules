@@ -1,0 +1,116 @@
+rules:
+- id: csharp_ssrf_Rule-Ssrf
+  severity: WARNING
+  languages:
+  - csharp
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+    owasp: "A01:2021-Broken Access Control"
+    category: security
+    technology:
+    - .net
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: MEDIUM
+    impact: HIGH
+  message: "[SSRF] User-controlled URL used in network request. Validate URL against allowlist, enforce HTTPS only, block internal IPs."
+  patterns:
+  - pattern-either:
+    - pattern: |
+        WebRequest.Create($X)
+    - pattern: |
+        WebRequest.Create($"$PREFIX{$X}$SUFFIX")
+    - pattern: |
+        WebRequest.Create($PREFIX + $X + $SUFFIX)
+    - pattern: |
+        new RestClient($X)
+    - pattern: |
+        $X.GetAsync()
+    - pattern: |
+        $X.PostJsonAsync(...)
+    - pattern: |
+        $C.GetStringAsync($X)
+    - pattern: |
+        $C.GetAsync($X)
+    - pattern: |
+        $C.PostAsync($X, ...)
+    - pattern: |
+        $C.PutAsync($X, ...)
+    - pattern: |
+        $C.DeleteAsync($X)
+    - pattern: |
+        $C.SendAsync($X)
+    - pattern: |
+        new Uri($X)
+    - pattern: |
+        Uri.UnescapeDataString($X)
+    - pattern: |
+        new HttpRequestMessage($M, $X)
+    - pattern: |
+        Redirect($X)
+    - pattern: |
+        RedirectPermanent($X)
+    - pattern: |
+        new RedirectResult($X)
+    - pattern: |
+        XmlDocument.Load($X)
+    - pattern: |
+        XDocument.Load($X)
+    - pattern: |
+        TcpClient $C = new TcpClient(); ... $C.ConnectAsync($X, ...)
+    - pattern: |
+        using (WebClient $C = new WebClient()) { ... $C.DownloadString($X); }
+    - pattern: |
+        using (WebClient $C = new WebClient()) { ... $C.DownloadData($X); }
+    - pattern: |
+        using (WebClient $C = new WebClient()) { ... $C.UploadString($X, ...); }
+    - pattern: |
+        StringBuilder $SB = new StringBuilder(); $SB.Append($X); ... $C.DownloadString($SB.ToString())
+    - pattern: |
+        byte[] $DATA = Convert.FromBase64String($X); string $URL = Encoding.UTF8.GetString($DATA); ... $C.DownloadString($URL)
+    - pattern: |
+        string $ENCODED = Uri.EscapeDataString($X); string $URL = $"http://...{$ENCODED}..."; ... $C.GetStringAsync($URL)
+    - pattern: |
+        string $URL = string.Format($FMT, $X); ... $C.GetAsync($URL)
+    - pattern: |
+        string $URL = string.Concat($PREFIX, $X, $SUFFIX); ... $C.GetStringAsync($URL)
+  - pattern-not: |
+      Configuration.GetValue(...)
+  - pattern-not: |
+      "..."
+  - pattern-not: |
+      "https://..."
+  - pattern-not: |
+      "http://..."
+  - pattern-not: |
+      "ftp://..."
+  - pattern-not: |
+      "file://..."
+  - pattern-not: |
+      $X.StartsWith("https://")
+  - pattern-not: |
+      $X.StartsWith("http://")
+  - pattern-not: |
+      $X.StartsWith("ftp://")
+  - pattern-not: |
+      $X.StartsWith("file://")
+  - pattern-not-inside: |
+      $URL.StartsWith("https://")
+  - pattern-not-inside: |
+      $URL.StartsWith("http://")
+  - pattern-not-inside: |
+      $URL.StartsWith("ftp://")
+  - pattern-not-inside: |
+      $URL.StartsWith("file://")
+  - pattern-not-inside: |
+      $ALLOWED.Contains($URL)
+  - pattern-not-inside: |
+      Uri.TryCreate($URL, UriKind.Absolute, out $URI)
+  - pattern-not-inside: |
+      $MAP.TryGetValue($KEY, out $URL)
+  - pattern-not-inside: |
+      Regex.IsMatch($URL, $PATTERN)
+  - pattern-not-inside: |
+      if ($CONDITION) { ... return ...; }

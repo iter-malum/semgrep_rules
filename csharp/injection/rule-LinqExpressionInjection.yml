@@ -1,0 +1,228 @@
+rules:
+  - id: rule-LinqExpressionInjection
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-943: Improper Neutralization of Special Elements in Data Query
+          Logic"
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+      references:
+        - https://github.com/zzzprojects/System.Linq.Dynamic.Core
+        - https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html
+      technology:
+        - csharp
+        - linq
+        - system-linq-dynamic-core
+      vulnerability_class:
+        - LINQ Injection
+        - Dynamic LINQ Injection
+      subcategory:
+        - vuln
+      impact: HIGH
+      likelihood: HIGH
+    languages:
+      - csharp
+    severity: WARNING
+    message: "Обнаружено потенциально опасное использование Dynamic LINQ с
+      динамически формируемыми строковыми выражениями. Методы Where, OrderBy,
+      Select, GroupBy и другие из System.Linq.Dynamic.Core ожидают
+      параметризованные выражения. Если передать строку, сформированную через
+      интерполяцию, конкатенацию или string.Format из пользовательского ввода,
+      злоумышленник может внедрить произвольные LINQ выражения. Исправление:
+      используйте параметризованные запросы Dynamic LINQ через перегрузки с
+      object[] args или используйте безопасные механизмы валидации входных
+      данных с whitelist'ом допустимых значений."
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: |
+                  $QUERY.Where($"$EXPRESSION", ...)
+              - pattern-not: |
+                  $QUERY.Where($"$EXPRESSION", $PARAM, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.Where($FILTER, ...)
+              - pattern-not: |
+                  $QUERY.Where("...", ...)
+              - pattern-not: |
+                  $QUERY.Where($FILTER, $PARAM, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.OrderBy($"$EXPRESSION")
+              - pattern-not: |
+                  $QUERY.OrderBy($"$EXPRESSION", $PARAM)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.OrderBy($ORDER, ...)
+              - pattern-not: |
+                  $QUERY.OrderBy("...", ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.OrderByDescending($"$EXPRESSION")
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.OrderByDescending($ORDER, ...)
+              - pattern-not: |
+                  $QUERY.OrderByDescending("...", ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.Select($"$EXPRESSION", ...)
+              - pattern-not: |
+                  $QUERY.Select($"$EXPRESSION", $PARAM, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.Select($SELECTION, ...)
+              - pattern-not: |
+                  $QUERY.Select("...", ...)
+              - pattern-not: |
+                  $QUERY.Select($SELECTION, $PARAM, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.GroupBy($"$EXPRESSION", ...)
+              - pattern-not: |
+                  $QUERY.GroupBy($"$EXPRESSION", $PARAM, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.GroupBy($GROUP, ...)
+              - pattern-not: |
+                  $QUERY.GroupBy("...", ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.Any($"$EXPRESSION", ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern-either:
+                  - pattern: |
+                      $QUERY.First($"$EXPRESSION", ...)
+                  - pattern: |
+                      $QUERY.FirstOrDefault($"$EXPRESSION", ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  string $VAR = $"$EXPRESSION";
+                  ...
+                  $QUERY.Where($VAR, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  string $VAR = $STR1 + $STR2;
+                  ...
+                  $QUERY.OrderBy($VAR, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  string $VAR = string.Format($FORMAT, $...ARGS);
+                  ...
+                  $QUERY.Where($VAR, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern-either:
+                  - pattern: |
+                      var $SB = new System.Text.StringBuilder();
+                      $SB.Append($...ARGS);
+                      string $VAR = $SB.ToString();
+                      ...
+                      $QUERY.Where($VAR, ...)
+                  - pattern: |
+                      var $SB = new StringBuilder();
+                      $SB.Append($...ARGS);
+                      string $VAR = $SB.ToString();
+                      ...
+                      $QUERY.OrderBy($VAR, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.OrderBy($COLUMN + " " + $DIRECTION, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.Where($COND1 + " AND " + $COND2, ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: >
+                  DynamicExpression.ParseLambda($PARAMETER, $RESULT_TYPE,
+                  $EXPRESSION, ...)
+              - pattern-not: >
+                  DynamicExpression.ParseLambda($PARAMETER, $RESULT_TYPE, "...",
+                  ...)
+          - patterns:
+              - pattern: |
+                  $QUERY.ThenBy($"$EXPRESSION")
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: |
+                  $QUERY.ThenByDescending($"$EXPRESSION")
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+          - patterns:
+              - pattern: >
+                  $QUERY.Join($INNER, $"$OUTER_KEY", $"$INNER_KEY", $"$RESULT",
+                  ...)
+              - pattern-inside: |
+                  using System.Linq.Dynamic.Core;
+                  ...
+      - pattern-not-inside: |
+          #if DEBUG
+          ...
+          #endif
+      - pattern-not: |
+          string $COLUMN = "...";
+          string $ORDER = $COLUMN + " " + $DIRECTION;
+          $QUERY.OrderBy($ORDER, ...)
+      - pattern-not: |
+          $WHITELIST.Contains($COLUMN)
+          ...
+          $QUERY.OrderBy($COLUMN + " " + $DIRECTION, ...)

@@ -1,46 +1,98 @@
-# yamllint disable
-# License: MIT (c) GitLab Inc.
-# yamllint enable
----
 rules:
-- id: "csharp_cookies_rule-CookieWithoutSSLFlag"
-  languages:
-  - "csharp"
-  mode: "taint"
-  pattern-sources:
-  - pattern: |
-      var $COOKIE = new HttpCookie(...);
-  pattern-sinks:
-  - pattern: "$COOKIE"
-  pattern-sanitizers:
-  - pattern: "$COOKIE.Secure = true;"
-  message: |
-    The `Secure` attribute when set to `true` protects the cookie value from being being
-    transmitted over clear text
-    communication paths such as HTTP. By enabling this protection, the cookie will only be sent
-    over HTTPS.
-
-    Example of protecting an HttpCookie:
-    ```
-    // Create an HttpOnly cookie.
-    HttpCookie someCookie = new HttpCookie("SomeCookieName", "SomeValue");
-    someCookie.Secure = true;
-    ```
-
-    For more information see:
-    https://learn.microsoft.com/en-us/dotnet/api/system.web.httpcookie.secure
-
-    Session cookies should be configured with the following security directives:
-
-    - [HTTPOnly](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies)
-    - [SameSite](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite)
-    - [Secure](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies)
-  severity: "WARNING"
-  metadata:
-    shortDescription: "Sensitive cookie in HTTPS session without 'Secure' attribute"
-    category: "security"
-    owasp:
-    - "A6:2017-Security Misconfiguration"
-    - "A05:2021-Security Misconfiguration"
-    cwe: "CWE-614"
-    security-severity: "Low"
+  - id: csharp_cookies_rule-CookieWithoutSSLFlag
+    languages:
+      - csharp
+    mode: taint
+    pattern-sources:
+      - pattern: |
+          new HttpCookie($NAME, $VALUE)
+      - patterns:
+          - pattern: |
+              $RESPONSE.Cookies.Append($NAME, $VALUE)
+      - pattern: |
+          new CookieOptions { Secure = false }
+      - pattern: |
+          new CookieOptions { Secure = false, HttpOnly = true }
+      - pattern: |
+          new CookieOptions { HttpOnly = true, Secure = false }
+      - pattern: |
+          new CookieOptions()
+      - pattern: |
+          new CookieOptions { HttpOnly = true }
+      - patterns:
+          - pattern: |
+              var $OPTIONS = new CookieOptions();
+              $OPTIONS.Secure = false;
+      - patterns:
+          - pattern: |
+              var $OPTIONS = new CookieOptions();
+              $OPTIONS.HttpOnly = true;
+    pattern-sinks:
+      - pattern: |
+          $RESPONSE.SetCookie($COOKIE)
+      - pattern: |
+          Response.SetCookie($COOKIE)
+      - pattern: |
+          _response.SetCookie($COOKIE)
+      - pattern: |
+          $RESPONSE.Cookies.Append($NAME, $VALUE)
+      - pattern: |
+          $RESPONSE.Cookies.Append($NAME, $VALUE, $OPTIONS)
+    pattern-sanitizers:
+      - patterns:
+          - pattern: |
+              new HttpCookie($NAME, $VALUE)
+          - pattern-inside: |
+              $COOKIE.Secure = true;
+              ...
+      - pattern: |
+          new HttpCookie($NAME, $VALUE) { Secure = true }
+      - pattern: |
+          new HttpCookie($NAME, $VALUE) { Secure = true, HttpOnly = true }
+      - pattern: |
+          new HttpCookie($NAME, $VALUE) { HttpOnly = true, Secure = true }
+      - pattern: |
+          new CookieOptions { Secure = true }
+      - pattern: |
+          new CookieOptions { Secure = true, HttpOnly = true }
+      - pattern: |
+          new CookieOptions { HttpOnly = true, Secure = true }
+      - patterns:
+          - pattern: |
+              var $OPTIONS = new CookieOptions();
+              $OPTIONS.Secure = true;
+      - patterns:
+          - pattern: |
+              var $OPTIONS = new CookieOptions();
+              $OPTIONS.Secure = true;
+              $OPTIONS.HttpOnly = true;
+      - patterns:
+          - pattern: |
+              var $OPTIONS = new CookieOptions();
+              $OPTIONS.HttpOnly = true;
+              $OPTIONS.Secure = true;
+      - patterns:
+          - pattern: >
+              $RESPONSE.Cookies.Append($NAME, $VALUE, new CookieOptions { Secure
+              = true })
+      - patterns:
+          - pattern: >
+              $RESPONSE.Cookies.Append($NAME, $VALUE, new CookieOptions { Secure
+              = true, HttpOnly = true })
+    message: Cookie без флага Secure. Установите Secure = true, чтобы cookie
+      передавался только по HTTPS.
+    severity: WARNING
+    metadata:
+      author: Victor 4ernyak <https://t.me/iter_malum>
+      shortDescription: Sensitive cookie without 'Secure' attribute
+      category: security
+      owasp:
+        - A6:2017-Security Misconfiguration
+        - A05:2021-Security Misconfiguration
+      cwe: CWE-614
+      security-severity: Low
+      subcategory:
+        - vuln
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH

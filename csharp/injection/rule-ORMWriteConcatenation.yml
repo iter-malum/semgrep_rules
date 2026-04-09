@@ -1,0 +1,161 @@
+# yamllint disable
+# License: MIT
+# yamllint enable
+---
+rules:
+- id: rule-ORMWriteConcatenation
+  mode: taint
+  pattern-sources:
+    - patterns:
+        - pattern: |
+            (string $X)
+        - pattern-not: |
+            "..."
+  
+  pattern-propagators:
+    - pattern: (StringBuilder $B).$ANY(...,(string $X),...)
+      from: $X
+      to: $B
+    - pattern: string.Format($FORMAT, $...ARGS)
+      from: $...ARGS
+      to: $PROPAGATOR
+    - pattern: $"$EXPR"
+      from: $EXPR
+      to: $PROPAGATOR
+    - pattern: $STR1 + $STR2
+      from: $STR1
+      to: $PROPAGATOR
+    - pattern: $STR1 + $STR2
+      from: $STR2
+      to: $PROPAGATOR
+    - pattern: string.Concat($...ARGS)
+      from: $...ARGS
+      to: $PROPAGATOR
+    - pattern: (StringBuilder $B).ToString()
+      from: $B
+      to: $PROPAGATOR
+  
+  pattern-sinks:
+    - patterns:
+        - pattern-either:
+            # EF Core
+            - patterns:
+                - pattern: |
+                    $X.Database.ExecuteSqlRaw($ARG, ...)
+                - focus-metavariable: $ARG
+            - patterns:
+                - pattern: |
+                    $X.Database.ExecuteSqlRawAsync($ARG, ...)
+                - focus-metavariable: $ARG
+            - patterns:
+                - pattern: |
+                    $X.Database.ExecuteSqlInterpolated($ARG, ...)
+                - focus-metavariable: $ARG
+            - patterns:
+                - pattern: |
+                    $X.Database.ExecuteSqlInterpolatedAsync($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper Execute
+            - patterns:
+                - pattern: |
+                    $X.Execute($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper ExecuteAsync
+            - patterns:
+                - pattern: |
+                    $X.ExecuteAsync($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper Query
+            - patterns:
+                - pattern: |
+                    $X.Query($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper QueryFirst
+            - patterns:
+                - pattern: |
+                    $X.QueryFirst($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper QueryFirstOrDefault
+            - patterns:
+                - pattern: |
+                    $X.QueryFirstOrDefault($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper QuerySingle
+            - patterns:
+                - pattern: |
+                    $X.QuerySingle($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper QuerySingleOrDefault
+            - patterns:
+                - pattern: |
+                    $X.QuerySingleOrDefault($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper QueryMultiple
+            - patterns:
+                - pattern: |
+                    $X.QueryMultiple($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper ExecuteScalar
+            - patterns:
+                - pattern: |
+                    $X.ExecuteScalar($ARG, ...)
+                - focus-metavariable: $ARG
+            # Dapper ExecuteReader
+            - patterns:
+                - pattern: |
+                    $X.ExecuteReader($ARG, ...)
+                - focus-metavariable: $ARG
+            # NHibernate
+            - patterns:
+                - pattern: |
+                    $X.CreateSQLQuery($ARG)
+                - focus-metavariable: $ARG
+            - patterns:
+                - pattern: |
+                    $X.CreateSQLQuery($ARG).ExecuteUpdate()
+                - focus-metavariable: $ARG
+            - patterns:
+                - pattern: |
+                    $X.CreateNativeQuery($ARG)
+                - focus-metavariable: $ARG
+  
+  pattern-sanitizers:
+    - pattern-either:
+        - pattern: |
+            $X.Execute($ARG, $PARAM)
+        - pattern: |
+            $X.ExecuteAsync($ARG, $PARAM)
+        - pattern: |
+            $X.Query($ARG, $PARAM)
+        - pattern: |
+            $X.ExecuteSqlRaw($ARG, $PARAM)
+        - pattern: |
+            $X.ExecuteSqlInterpolated($"...")
+        - pattern: |
+            $X.CreateSQLQuery($ARG).SetParameter($NAME, $VALUE)
+      by-side-effect: true
+  
+  message: "Обнаружено опасное использование ORM методов с динамически формируемыми SQL запросами. Методы ExecuteSqlRaw, ExecuteSqlInterpolated (EF Core), Execute, Query (Dapper), CreateSQLQuery (NHibernate) для модификации данных становятся уязвимыми для SQL инъекции, если в них передается динамически сформированная строка с пользовательским вводом. Исправление: всегда используйте параметризованные запросы."
+  
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    category: "security"
+    technology:
+      - "csharp"
+      - "entity-framework-core"
+      - "dapper"
+      - "nhibernate"
+    owasp:
+      - "A01:2017 - Injection"
+      - "A03:2021 - Injection"
+    cwe:
+      - "CWE-89"
+    confidence: "HIGH"
+    subcategory:
+      - "audit"
+    likelihood: "HIGH"
+    impact: "HIGH"
+  
+  languages:
+    - "csharp"
+  severity: "ERROR"

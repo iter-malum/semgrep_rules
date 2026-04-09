@@ -1,0 +1,65 @@
+rules:
+- id: csharp_zip_slip_Rule-ZipSlip
+  severity: ERROR
+  languages:
+  - csharp
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+    owasp: "A01:2021-Broken Access Control"
+    category: security
+    technology:
+    - .net
+    confidence: HIGH
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: HIGH
+  message: "[Zip Slip] Extracting zip archive without validating file paths. Attacker can write files outside target directory using '../' sequences in archive entries. Use Path.GetFullPath and verify extracted path starts with destination directory."
+  patterns:
+  - pattern-either:
+    - pattern: ZipFile.ExtractToDirectory($ARCHIVE, $DESTINATION)
+    - pattern: ZipFile.ExtractToDirectory($ARCHIVE, $DESTINATION, $OVERWRITE)
+    - pattern: $ARCHIVE.ExtractToDirectory($DESTINATION)
+    - pattern: $ARCHIVE.ExtractToDirectory($DESTINATION, $OVERWRITE)
+    - pattern: $ENTRY.ExtractToFile($PATH)
+    - pattern: $ENTRY.ExtractToFile($PATH, $OVERWRITE)
+    - pattern: $ZIP.ExtractAll($DESTINATION)
+    - pattern: $ZIP.ExtractAll($DESTINATION, $OPTIONS)
+    - pattern: $ENTRY.Extract($DESTINATION)
+    - pattern: $ENTRY.Extract($DESTINATION, $OPTIONS)
+    - pattern: $FASTZIP.ExtractZip($ARCHIVE, $DESTINATION, $OPTIONS)
+    - pattern: $ZIPFILE.ExtractZip($DESTINATION, $OPTIONS)
+    - pattern: |
+        using (var $STREAM = new FileStream($PATH, FileMode.Create))
+        {
+          $INPUT.CopyTo($STREAM);
+        }
+    - pattern: |
+        File.WriteAllBytes($PATH, $DATA)
+    - pattern: |
+        using (var $FS = new FileStream($PATH, FileMode.Create))
+        {
+          ...
+        }
+  - pattern-not-inside: |
+      string $FULLPATH = Path.GetFullPath(Path.Combine($DESTINATION, $ENTRY.FullName));
+      if (!$FULLPATH.StartsWith($DESTINATION))
+  - pattern-not-inside: |
+      if (!$FULLPATH.StartsWith($DESTINATION))
+  - pattern-not-inside: |
+      if ($FULLPATH.StartsWith($DESTINATION))
+  - pattern-not-inside: |
+      Path.GetFullPath($PATH)
+  - pattern-not-inside: |
+      Path.GetFileName($ENTRY.FullName)
+  - pattern-not-inside: |
+      Path.GetFileName($PATH)
+  - pattern-not-inside: |
+      $ENTRY.Name == ""
+  - pattern-not-inside: |
+      string.IsNullOrEmpty($ENTRY.Name)
+  - pattern-not-inside: |
+      $"constant"
+  - pattern-not-inside: |
+      "..."

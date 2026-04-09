@@ -1,0 +1,174 @@
+rules:
+- id: csharp_log_injection_Rule-LogInjection
+  severity: WARNING
+  languages:
+  - csharp
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    cwe: "CWE-117: Improper Output Neutralization for Logs"
+    owasp: "A09:2021-Security Logging and Monitoring Failures"
+    category: security
+    technology:
+    - .net
+    confidence: MEDIUM
+    subcategory:
+    - audit
+    likelihood: MEDIUM
+    impact: LOW
+  message: "[Log Injection] User-controlled data written to log without sanitization. Attacker can inject fake log entries, bypass monitoring, or exploit log viewers. Use structured logging with parameters instead of string concatenation."
+  patterns:
+  - pattern-either:
+    - patterns:
+      - pattern: |
+          $LOG.LogInformation($X)
+      - pattern-not: |
+          $LOG.LogInformation("...")
+      - pattern-not: |
+          $LOG.LogInformation($"constant")
+      - pattern-not: |
+          $LOG.LogInformation("..." + "...")
+    - patterns:
+      - pattern: |
+          $LOG.LogDebug($X)
+      - pattern-not: |
+          $LOG.LogDebug("...")
+    - patterns:
+      - pattern: |
+          $LOG.LogWarning($X)
+      - pattern-not: |
+          $LOG.LogWarning("...")
+    - patterns:
+      - pattern: |
+          $LOG.LogError($X)
+      - pattern-not: |
+          $LOG.LogError("...")
+    - patterns:
+      - pattern: |
+          $LOG.LogCritical($X)
+      - pattern-not: |
+          $LOG.LogCritical("...")
+    - patterns:
+      - pattern: |
+          _logger.LogInformation($X)
+      - pattern-not: |
+          _logger.LogInformation("...")
+    - patterns:
+      - pattern: |
+          _logger.LogDebug($X)
+      - pattern-not: |
+          _logger.LogDebug("...")
+    - patterns:
+      - pattern: |
+          _logger.LogWarning($X)
+      - pattern-not: |
+          _logger.LogWarning("...")
+    - patterns:
+      - pattern: |
+          _logger.LogError($X)
+      - pattern-not: |
+          _logger.LogError("...")
+    - patterns:
+      - pattern: |
+          _serilog.Information($X)
+      - pattern-not: |
+          _serilog.Information("...")
+    - patterns:
+      - pattern: |
+          _nlogger.Info($X)
+      - pattern-not: |
+          _nlogger.Info("...")
+    - patterns:
+      - pattern: |
+          _log4net.Info($X)
+      - pattern-not: |
+          _log4net.Info("...")
+    - patterns:
+      - pattern: |
+          Console.WriteLine($X)
+      - pattern-not: |
+          Console.WriteLine("...")
+    - patterns:
+      - pattern: |
+          System.Diagnostics.Debug.WriteLine($X)
+      - pattern-not: |
+          System.Diagnostics.Debug.WriteLine("...")
+    - patterns:
+      - pattern: |
+          System.Diagnostics.Trace.WriteLine($X)
+      - pattern-not: |
+          System.Diagnostics.Trace.WriteLine("...")
+    - patterns:
+      - pattern: |
+          eventLog.WriteEntry($X)
+      - pattern-not: |
+          eventLog.WriteEntry("...")
+    - patterns:
+      - pattern: |
+          $WRITER.WriteLine($X)
+      - pattern-not: |
+          $WRITER.WriteLine("...")
+    - patterns:
+      - pattern: |
+          StringBuilder $SB = new StringBuilder();
+          $SB.Append($X);
+          ...
+          $LOG.LogInformation($SB.ToString())
+      - pattern-not: |
+          $LOG.LogInformation("...")
+    - patterns:
+      - pattern: |
+          string $VAR = $"$PREFIX{$X}$SUFFIX";
+          ...
+          $LOG.LogInformation($VAR)
+      - pattern-not: |
+          $LOG.LogInformation("...")
+    - patterns:
+      - pattern: |
+          string $VAR = $PREFIX + $X + $SUFFIX;
+          ...
+          $LOG.LogInformation($VAR)
+      - pattern-not: |
+          $LOG.LogInformation("...")
+    - patterns:
+      - pattern: |
+          string $VAR = string.Format($FMT, $X);
+          ...
+          $LOG.LogInformation($VAR)
+      - pattern-not: |
+          $LOG.LogInformation("...")
+    - patterns:
+      - pattern: |
+          byte[] $DATA = Convert.FromBase64String($X);
+          string $DECODED = Encoding.UTF8.GetString($DATA);
+          ...
+          $LOG.LogInformation($DECODED)
+      - pattern-not: |
+          $LOG.LogInformation("...")
+    - patterns:
+      - pattern: |
+          string $DECODED = Uri.UnescapeDataString($X);
+          ...
+          $LOG.LogInformation($DECODED)
+      - pattern-not: |
+          $LOG.LogInformation("...")
+    - patterns:
+      - pattern: |
+          try { ... } catch (Exception $EX) { $LOG.LogError($EX, $X); }
+      - pattern-not: |
+          $LOG.LogError($EX, "...")
+  - pattern-not-inside: |
+      $LOG.LogInformation("...", $PARAM)
+  - pattern-not-inside: |
+      $LOG.LogDebug("...", $PARAM)
+  - pattern-not-inside: |
+      $LOG.LogWarning("...", $PARAM)
+  - pattern-not-inside: |
+      $LOG.LogError("...", $PARAM)
+  - pattern-not-inside: |
+      $LOG.LogCritical("...", $PARAM)
+  - pattern-not-inside: |
+      $X.Replace("\n", "")
+  - pattern-not-inside: |
+      $X.Replace("\r", "")
+  - pattern-not-inside: |
+      $X.Replace(Environment.NewLine, "")

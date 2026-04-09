@@ -1,0 +1,111 @@
+# yamllint disable
+# License: MIT (c) GitLab Inc.
+# yamllint enable
+---
+rules:
+- id: "csharp_path_traversal_Rule-PathTraversal"
+  languages:
+  - "csharp"
+  severity: "ERROR"
+  message: "Path Traversal vulnerability: User-controlled input used directly in file system operation. Use Path.GetFileName(), whitelist validation, or Path.GetFullPath() with base directory check."
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    shortDescription: "Path Traversal vulnerability"
+    category: "security"
+    owasp:
+    - "A1:2017-Injection"
+    - "A03:2021-Injection"
+    cwe: "CWE-22"
+    security-severity: "High"
+  patterns:
+    - pattern-either:
+        # Direct user input in file operations
+        - pattern: PhysicalFile($INPUT, ...)
+        - pattern: System.IO.File.ReadAllText($INPUT)
+        - pattern: File.ReadAllText($INPUT)
+        - pattern: System.IO.File.ReadAllTextAsync($INPUT)
+        - pattern: File.ReadAllTextAsync($INPUT)
+        - pattern: System.IO.File.ReadAllBytes($INPUT)
+        - pattern: File.ReadAllBytes($INPUT)
+        - pattern: System.IO.File.ReadAllLines($INPUT)
+        - pattern: File.ReadAllLines($INPUT)
+        - pattern: System.IO.File.WriteAllText($INPUT, ...)
+        - pattern: File.WriteAllText($INPUT, ...)
+        - pattern: System.IO.File.WriteAllBytes($INPUT, ...)
+        - pattern: File.WriteAllBytes($INPUT, ...)
+        - pattern: System.IO.File.AppendAllText($INPUT, ...)
+        - pattern: File.AppendAllText($INPUT, ...)
+        - pattern: System.IO.File.Delete($INPUT)
+        - pattern: File.Delete($INPUT)
+        - pattern: System.IO.File.Copy($INPUT, ...)
+        - pattern: File.Copy($INPUT, ...)
+        - pattern: System.IO.File.Move($INPUT, ...)
+        - pattern: File.Move($INPUT, ...)
+        - pattern: System.IO.File.Create($INPUT)
+        - pattern: File.Create($INPUT)
+        - pattern: Directory.GetFiles($INPUT)
+        - pattern: Directory.GetDirectories($INPUT)
+        - pattern: Directory.Exists($INPUT)
+        - pattern: Directory.CreateDirectory($INPUT)
+        - pattern: Directory.Delete($INPUT)
+        - pattern: new FileStream($INPUT, ...)
+        - pattern: new StreamReader($INPUT)
+        - pattern: new StreamWriter($INPUT)
+        - pattern: new FileInfo($INPUT)
+        - pattern: new DirectoryInfo($INPUT)
+        - pattern: ZipFile.ExtractToDirectory($INPUT, ...)
+        - pattern: Path.GetFullPath($INPUT)
+        
+        # Path.Combine with user input
+        - patterns:
+            - pattern: Path.Combine($BASE, $INPUT, ...)
+            - pattern-either:
+                - pattern: PhysicalFile($RESULT, ...)
+                - pattern: System.IO.File.ReadAllText($RESULT)
+                - pattern: File.ReadAllText($RESULT)
+                - pattern: System.IO.File.Delete($RESULT)
+                - pattern: File.Delete($RESULT)
+                - pattern: Directory.GetFiles($RESULT)
+                - pattern: new FileStream($RESULT, ...)
+                - pattern: new StreamReader($RESULT)
+                - pattern: new FileInfo($RESULT)
+        
+        # String concatenation with user input
+        - patterns:
+            - pattern: $STR + $INPUT
+            - pattern-either:
+                - pattern: PhysicalFile($RESULT, ...)
+                - pattern: System.IO.File.ReadAllText($RESULT)
+                - pattern: File.ReadAllText($RESULT)
+        
+        # String interpolation with user input
+        - patterns:
+            - pattern: $"$...{$INPUT}..."
+            - pattern-either:
+                - pattern: PhysicalFile($RESULT, ...)
+                - pattern: System.IO.File.ReadAllText($RESULT)
+                - pattern: File.ReadAllText($RESULT)
+    
+    # Exclude cases where Path.GetFileName is used (sanitizer)
+    - pattern-not-inside: |
+        Path.GetFileName($INPUT)
+        ...
+        PhysicalFile($PATH, ...)
+    
+    - pattern-not-inside: |
+        Path.GetFileName($INPUT)
+        ...
+        File.ReadAllText($PATH)
+    
+    - pattern-not-inside: |
+        Path.GetFileName($INPUT)
+        ...
+        File.Delete($PATH)
+    
+    # Exclude cases with validation
+    - pattern-not-inside: |
+        if ($CONDITION) {
+            ...
+        }
+        ...
+        PhysicalFile($PATH, ...)

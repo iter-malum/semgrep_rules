@@ -1,0 +1,144 @@
+# yamllint disable
+# License: MIT
+# yamllint enable
+---
+rules:
+- id: rule-StringFormatSQLInjection
+  mode: taint
+  pattern-sources:
+    - patterns:
+        - pattern: |
+            (string $X)
+        - pattern-not: |
+            "..."
+  
+  pattern-propagators:
+    # Пропагатор 1: string.Format
+    - pattern: string.Format($FORMAT, $...ARGS)
+      from: $...ARGS
+      to: $PROPAGATOR
+    
+    # Пропагатор 2: Интерполяция строк
+    - pattern: $"$EXPR"
+      from: $EXPR
+      to: $PROPAGATOR
+    
+    # Пропагатор 3: Конкатенация строк
+    - pattern: $STR1 + $STR2
+      from: $STR1
+      to: $PROPAGATOR
+    - pattern: $STR1 + $STR2
+      from: $STR2
+      to: $PROPAGATOR
+    
+    # Пропагатор 4: StringBuilder конструктор
+    - pattern: (StringBuilder $B).StringBuilder($VALUE)
+      from: $VALUE
+      to: $B
+    
+    # Пропагатор 5: StringBuilder.Append
+    - pattern: (StringBuilder $B).Append($VALUE)
+      from: $VALUE
+      to: $B
+    
+    # Пропагатор 6: StringBuilder.AppendLine
+    - pattern: (StringBuilder $B).AppendLine($VALUE)
+      from: $VALUE
+      to: $B
+    
+    # Пропагатор 7: StringBuilder.AppendFormat
+    - pattern: (StringBuilder $B).AppendFormat($FORMAT, $...ARGS)
+      from: $...ARGS
+      to: $B
+    
+    # Пропагатор 8: StringBuilder.Insert
+    - pattern: (StringBuilder $B).Insert($INDEX, $VALUE)
+      from: $VALUE
+      to: $B
+    
+    # Пропагатор 9: StringBuilder.Replace
+    - pattern: (StringBuilder $B).Replace($OLD, $NEW)
+      from: $NEW
+      to: $B
+    
+    # Пропагатор 10: string.Concat
+    - pattern: string.Concat($...ARGS)
+      from: $...ARGS
+      to: $PROPAGATOR
+    
+    # Пропагатор 11: StringBuilder.ToString
+    - pattern: (StringBuilder $B).ToString()
+      from: $B
+      to: $PROPAGATOR
+  
+  pattern-sinks:
+    - patterns:
+        - pattern-either:
+            - patterns:
+                - pattern: |
+                    new $PATTERN($CMD, ...)
+                - focus-metavariable: $CMD
+            - patterns:
+                - pattern: |
+                    $CMD.$PATTERN = $VALUE
+                - focus-metavariable: $VALUE
+            - patterns:
+                - pattern: |
+                    $CMD.$PATTERN += $VALUE
+                - focus-metavariable: $VALUE
+        - metavariable-regex:
+            metavariable: $PATTERN
+            regex: ^(SqlCommand|CommandText|OleDbCommand|OdbcCommand|OracleCommand|SqliteCommand|NpgsqlCommand|MySqlCommand)$
+  
+  pattern-sanitizers:
+    - pattern-either:
+        - pattern: |
+            $CMD.Parameters.Add(...)
+        - pattern: |
+            $CMD.Parameters.AddRange(...)
+        - pattern: |
+            $CMD.Parameters.AddWithValue(...)
+        - pattern: |
+            $CMD.Parameters[$IDX].Value = ...
+        - pattern: |
+            new SqlParameter($NAME, $VALUE)
+        - pattern: |
+            new SqliteParameter($NAME, $VALUE)
+        - pattern: |
+            new OracleParameter($NAME, $VALUE)
+        - pattern: |
+            new NpgsqlParameter($NAME, $VALUE)
+        - pattern: |
+            new MySqlParameter($NAME, $VALUE)
+        - pattern: |
+            $VALUE.Replace("'", "''")
+      by-side-effect: true
+  
+  message: "Обнаружено опасное построение SQL запроса с использованием динамического формирования строк. Использование string.Format, интерполяции, конкатенации строк, StringBuilder или string.Concat для построения SQL запросов с подстановкой пользовательского ввода приводит к SQL инъекции. Злоумышленник может изменить логику запроса, получить несанкционированный доступ к данным или выполнить произвольные команды в БД. Исправление: используйте параметризованные запросы с SqlParameter, DbParameter или подобными механизмами. Никогда не вставляйте пользовательский ввод напрямую в SQL строку."
+  
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    category: "security"
+    technology:
+      - "csharp"
+      - "ado.net"
+    owasp:
+      - "A1:2017-Injection"
+      - "A03:2021-Injection"
+      - "A05:2025-Injection"
+    cwe:
+      - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+    confidence: "HIGH"
+    references:
+      - "https://owasp.org/Top10/A03_2021-Injection"
+      - "https://learn.microsoft.com/en-us/dotnet/framework/data/adonet/sql-server-security"
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+      - "audit"
+    likelihood: "HIGH"
+    impact: "HIGH"
+  
+  languages:
+    - "csharp"
+  severity: "ERROR"

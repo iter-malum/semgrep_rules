@@ -1,0 +1,77 @@
+rules:
+- id: csharp_cors_Rule-CorsMisconfiguration
+  severity: WARNING
+  languages:
+  - csharp
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    cwe: "CWE-942: Permissive Cross-domain Policy with Untrusted Domains"
+    owasp: "A01:2021-Broken Access Control"
+    category: security
+    technology:
+    - .net
+    - aspnetcore
+    confidence: HIGH
+    subcategory:
+    - vuln
+    likelihood: HIGH
+    impact: MEDIUM
+  message: "[CORS Misconfiguration] Application allows any origin (*) or reflects user-controlled origin. This can lead to data theft, CSRF attacks, and unauthorized API access. Configure CORS with specific allowed origins, not wildcards."
+  patterns:
+  - pattern-either:
+    - pattern: |
+        $BUILDER.AllowAnyOrigin()
+    - pattern: |
+        $BUILDER.WithOrigins("*")
+    - pattern: |
+        $POLICY.AllowAnyOrigin = true
+    - pattern: |
+        $OPTIONS.AllowAnyOrigin = true
+    - pattern: |
+        $BUILDER.SetIsOriginAllowed(_ => true)
+    - pattern: |
+        $BUILDER.SetIsOriginAllowedToAllowWildcardSubdomains()
+    - pattern: |
+        $BUILDER.WithOrigins("http://*")
+    - pattern: |
+        $BUILDER.WithOrigins("https://*")
+    - pattern: |
+        $BUILDER.WithOrigins("*://*")
+    - pattern: |
+        Response.Headers["Access-Control-Allow-Origin"] = "*"
+    - pattern: |
+        HttpContext.Response.Headers["Access-Control-Allow-Origin"] = "*"
+    - pattern: |
+        context.HttpContext.Response.Headers["Access-Control-Allow-Origin"] = "*"
+    - pattern: |
+        Response.Headers["Access-Control-Allow-Origin"] = "null"
+    - pattern: |
+        HttpContext.Response.Headers["Access-Control-Allow-Origin"] = "null"
+    - pattern: |
+        Response.Headers["Access-Control-Allow-Origin"] = $REQ.Headers["Origin"]
+    - pattern: |
+        HttpContext.Response.Headers["Access-Control-Allow-Origin"] = $REQ.Headers["Origin"]
+    - pattern: |
+        [EnableCors]
+    - pattern: |
+        [EnableCors($NAME)]
+    - pattern: |
+        app.UseCors($BUILDER.AllowAnyOrigin())
+    - pattern: |
+        app.UseCors($BUILDER.WithOrigins("*"))
+    - pattern: |
+        services.AddCors($OPTIONS)
+    - pattern: |
+        $BUILDER.SetIsOriginAllowed($REGEX)
+    - pattern: |
+        Response.Headers.Add("Access-Control-Allow-Origin", "*")
+    - pattern: |
+        HttpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*")
+  - pattern-not-inside: |
+      $ALLOWED.Contains($ORIGIN)
+  - pattern-not-inside: |
+      $ALLOWED_ORIGINS.Contains($ORIGIN)
+  - pattern-not-inside: |
+      $ORIGIN == "https://example.com"
+  - pattern-not-inside: |
+      Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"

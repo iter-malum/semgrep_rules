@@ -1,0 +1,94 @@
+# yamllint disable
+# License: MIT
+# yamllint enable
+---
+rules:
+- id: rule-StoredProcedureParameterInjection
+  mode: taint
+  pattern-sources:
+    - patterns:
+        - pattern: |
+            (string $X)
+        - pattern-not: |
+            "..."
+  
+  pattern-propagators:
+    - pattern: (StringBuilder $B).$ANY(...,(string $X),...)
+      from: $X
+      to: $B
+    - pattern: string.Format($FORMAT, $...ARGS)
+      from: $...ARGS
+      to: $PROPAGATOR
+    - pattern: $"$EXPR"
+      from: $EXPR
+      to: $PROPAGATOR
+    - pattern: $STR1 + $STR2
+      from: $STR1
+      to: $PROPAGATOR
+    - pattern: $STR1 + $STR2
+      from: $STR2
+      to: $PROPAGATOR
+    - pattern: string.Concat($...ARGS)
+      from: $...ARGS
+      to: $PROPAGATOR
+    - pattern: (StringBuilder $B).ToString()
+      from: $B
+      to: $PROPAGATOR
+  
+  pattern-sinks:
+    - patterns:
+        - pattern-either:
+            - patterns:
+                - pattern: |
+                    new $PATTERN($CMD, ...)
+                - focus-metavariable: $CMD
+            - patterns:
+                - pattern: |
+                    $CMD.$PATTERN = $VALUE
+                - focus-metavariable: $VALUE
+        - metavariable-regex:
+            metavariable: $PATTERN
+            regex: ^(SqlCommand|CommandText|OleDbCommand|OdbcCommand|OracleCommand|SqliteCommand|NpgsqlCommand|MySqlCommand)$
+  
+  pattern-sanitizers:
+    - pattern-either:
+        - pattern: |
+            $CMD.Parameters.Add(...)
+        - pattern: |
+            $CMD.Parameters.AddRange(...)
+        - pattern: |
+            $CMD.Parameters.AddWithValue(...)
+        - pattern: |
+            $CMD.Parameters[$IDX].Value = ...
+        - pattern: |
+            new SqlParameter($NAME, $VALUE)
+      by-side-effect: true
+  
+  message: "Обнаружено опасное динамическое формирование имени хранимой процедуры. Динамическое построение имени процедуры или SQL строки с подстановкой пользовательского ввода может привести к SQL инъекции. Злоумышленник может выполнить произвольные хранимые процедуры или внедрить malicious SQL код. Исправление: используйте параметризованные вызовы хранимых процедур с CommandType.StoredProcedure и SqlParameter, либо используйте whitelist допустимых имен процедур. Никогда не формируйте имя процедуры динамически из пользовательского ввода."
+  
+  metadata:
+    author: "Victor 4ernyak <https://t.me/iter_malum>"
+    category: "security"
+    technology:
+      - "csharp"
+      - "ado.net"
+    owasp:
+      - "A01:2017 - Injection"
+      - "A03:2021 - Injection"
+      - "A05:2025 - Injection"
+    cwe:
+      - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+    confidence: "HIGH"
+    references:
+      - "https://owasp.org/Top10/A03_2021-Injection"
+      - "https://learn.microsoft.com/en-us/dotnet/framework/data/adonet/sql-server-security"
+    cwe2022-top25: true
+    cwe2021-top25: true
+    subcategory:
+      - "audit"
+    likelihood: "HIGH"
+    impact: "HIGH"
+  
+  languages:
+    - "csharp"
+  severity: "ERROR"
