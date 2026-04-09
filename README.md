@@ -1,54 +1,65 @@
-🔍 Overview
-This repository contains high-quality Semgrep rules for detecting security vulnerabilities in C/C++ code. The rules cover critical security issues including:
+# 🔒 Security Rules for Semgrep
 
-    Memory safety issues (buffer overflows, use-after-free)
-    Path traversal and process control vulnerabilities
-    Race conditions and concurrency issues
-    Format string vulnerabilities
+A curated, production-ready collection of static analysis security rules for [Semgrep](https://semgrep.dev/). Designed to help developers, security engineers, and DevOps teams detect vulnerabilities, enforce secure coding practices, and comply with industry standards (OWASP, CWE, MITRE) across multiple programming languages.
 
-✨ Features
 
-    Precise rules with minimal false positives
-    Comprehensive test suite with real-world scenarios
-    Detailed documentation for each rule
-    Regular updates with new vulnerability patterns
+## 📊 Supported Languages & Rule Statistics
 
-🚀 Getting Started
+Statistics are based on `.yml` / `.yaml` rule definitions currently in the repository:
 
-    Install Semgrep: pip install semgrep
-    Scan your code: semgrep scan --config /semgrep_rules
-    Review results and fix vulnerabilities
+| Language       | Rules Count | Primary Coverage                          |
+|----------------|-------------|-------------------------------------------|
+| **Scala**      | `95`        | Web frameworks, XML/XXE, Injection, Crypto|
+| **Python**     | `65`        | Django/Flask, Cryptography, Deserialization, OS exec |
+| **Java**       | `56`        | Spring/Jakarta, SQLi, XXE, Auth, Crypto   |
+| **C#**         | `31`        | ASP.NET, EF Core, Cookies, Injection      |
+| **Dart**       | `27`        | Flutter security, Mobile, FFI, Obfuscation|
+| **Go**         | `25`        | HTTP, Filesystem, TLS, Subprocess, Memory |
+| **C**          | `11`        | Memory safety, Buffer overflow, Race cond.|
+| **JavaScript** | `10`        | Node.js, React, Eval, Timing attacks      |
+| **TOTAL**      | **`320`**   |                                           |
 
-🤝 Contributing
-Contributions are welcome! Please read our contribution guidelines
- before submitting pull requests.
-📄 License
-Distributed under the MIT License. See LICENSE
- for more information.
+> 💡 *Each rule includes a YAML definition and corresponding example/test files (`.cs`, `.py`, `.java`, etc.) to validate detection accuracy.*
 
-🔍 Обзор
-Этот репозиторий содержит высококачественные правила Semgrep для обнаружения уязвимостей в коде на C/C++. Правила охватывают критические проблемы безопасности, включая:
+## 🚀 Quick Start
 
-    Проблемы с памятью (переполнение буфера, use-after-free)
-    Уязвимости типа path traversal и управления процессами
-    Гонки данных и проблемы с многопоточностью
-    Уязвимости с форматными строками
+### Prerequisites
+```bash
+pip install semgrep
+# or
+brew install semgrep
+```
 
-✨ Особенности
 
-    Точные правила с минимальным количеством ложных срабатываний
-    Комплексный набор тестов с реалистичными сценариями
-    Подробная документация для каждого правила
-    Регулярные обновления с новыми шаблонами уязвимостей
 
-🚀 Начало работы
+# 🔒 Правила безопасности для Semgrep
 
-    Установите Semgrep: pip install semgrep
-    Проверьте ваш код: semgrep scan --config /semgrep_rules
-    Просмотрите результаты и устраните уязвимости
+Коллекция готовых к продакшену правил статического анализа для [Semgrep](https://semgrep.dev/). Создана, чтобы помогать разработчикам, специалистам по безопасности и DevOps-инженерам выявлять уязвимости, внедрять безопасные практики кодирования и соответствовать отраслевым стандартам (OWASP, CWE, MITRE) на множестве языков программирования.
 
-🤝 Участие
-Приветствуются любые вклады! Пожалуйста, ознакомьтесь с нашими правилами участия
- перед отправкой pull request.
-📄 Лицензия
-Распространяется под лицензией MIT. Подробнее в файле LICENSE.
+
+## 📊 Поддерживаемые языки и статистика правил
+
+Статистика основана на `.yml` / `.yaml` файлах правил, представленных в репозитории:
+
+| Язык           | Кол-во правил | Основное покрытие                             |
+|----------------|---------------|-----------------------------------------------|
+| **Scala**      | `95`          | Веб-фреймворки, XML/XXE, инъекции, криптография |
+| **Python**     | `65`          | Django/Flask, криптография, десериализация, exec |
+| **Java**       | `56`          | Spring/Jakarta, SQLi, XXE, аутентификация, крипто |
+| **C#**         | `31`          | ASP.NET, EF Core, cookies, инъекции           |
+| **Dart**       | `27`          | Flutter, мобильная безопасность, FFI, обфускация |
+| **Go**         | `25`          | HTTP, файловая система, TLS, подпроцессы, память |
+| **C**          | `11`          | Безопасность памяти, переполнение буфера, гонки |
+| **JavaScript** | `10`          | Node.js, React, eval, атаки по времени        |
+| **ВСЕГО**      | **`320`**     |                                               |
+
+> 💡 *Каждое правило состоит из YAML-описания и соответствующих примеров/тестов (`.cs`, `.py`, `.java` и др.) для валидации точности срабатываний.*
+
+## 🚀 Быстрый старт
+
+### Требования
+```bash
+pip install semgrep
+# или
+brew install semgrep
+```
