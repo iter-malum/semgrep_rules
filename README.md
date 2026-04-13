@@ -15,7 +15,7 @@ Statistics are based on `.yml` / `.yaml` rule definitions currently in the repos
 | **C#**         | `31`        | ASP.NET, EF Core, Cookies, Injection      |
 | **Dart**       | `27`        | Flutter security, Mobile, FFI, Obfuscation|
 | **Go**         | `25`        | HTTP, Filesystem, TLS, Subprocess, Memory |
-| **C**          | `11`        | Memory safety, Buffer overflow, Race cond.|
+| **C/C++**      | `20`        | Memory safety, Buffer overflow, Race cond.|
 | **JavaScript** | `10`        | Node.js, React, Eval, Timing attacks      |
 | **TOTAL**      | **`320`**   |                                           |
 
@@ -49,7 +49,7 @@ brew install semgrep
 | **C#**         | `31`          | ASP.NET, EF Core, cookies, инъекции           |
 | **Dart**       | `27`          | Flutter, мобильная безопасность, FFI, обфускация |
 | **Go**         | `25`          | HTTP, файловая система, TLS, подпроцессы, память |
-| **C**          | `11`          | Безопасность памяти, переполнение буфера, гонки |
+| **C/C++**      | `20`          | Безопасность памяти, переполнение буфера, гонки |
 | **JavaScript** | `10`          | Node.js, React, eval, атаки по времени        |
 | **ВСЕГО**      | **`320`**     |                                               |
 
