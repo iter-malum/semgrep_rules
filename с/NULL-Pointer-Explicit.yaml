@@ -1,0 +1,72 @@
+rules:
+  - id: NULL-Pointer-Explicit
+    metadata:
+      author: Victor 4ernyak
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-476: NULL Pointer Dereference"
+      technology:
+        - c
+        - cpp
+      subcategory:
+        - vuln
+      likelihood: MEDIUM
+      impact: HIGH
+    languages:
+      - c
+      - cpp
+    severity: ERROR
+    message: Pointer explicitly set to NULL and dereferenced without check
+    patterns:
+      - pattern-inside: |
+          $TYPE *$PTR = NULL;
+          ...
+      - pattern-either:
+          - pattern: $PTR->$FIELD
+          - pattern: $PTR->$FIELD = $VALUE
+          - pattern: $PTR->$FIELD++
+          - pattern: $PTR->$FIELD--
+          - pattern: $PTR[$INDEX]
+          - pattern: $PTR[$INDEX] = $VALUE
+          - pattern: $PTR[$INDEX]++
+          - pattern: $PTR[$INDEX]--
+          - pattern: $PTR = $VALUE
+          - pattern: $PTR + $OFFSET
+          - pattern: $PTR - $OFFSET
+          - pattern: $PTR++
+          - pattern: $PTR--
+          - pattern: ++$PTR
+          - pattern: --$PTR
+          - pattern: strcpy($PTR, ...)
+          - pattern: strncpy($PTR, ...)
+          - pattern: strlen($PTR)
+          - pattern: strcmp($PTR, ...)
+          - pattern: printf($PTR, ...)
+          - pattern: free($PTR)
+          - pattern: $FUNC(&$PTR, ...)
+      - pattern-not-inside: |
+          if ($PTR == NULL) { ... }
+      - pattern-not-inside: |
+          if ($PTR == NULL) { ... }
+          ...
+      - pattern-not-inside: |
+          if ($PTR != NULL) { ... }
+      - pattern-not-inside: |
+          if ($PTR != NULL) { ... }
+          ...
+      - pattern-not-inside: |
+          if (!$PTR) { ... }
+      - pattern-not-inside: |
+          if (!$PTR) { ... }
+          ...
+      - pattern-not-inside: |
+          if ($PTR) { ... }
+      - pattern-not-inside: |
+          if ($PTR) { ... }
+          ...
+      - pattern-not-inside: |
+          assert($PTR != NULL)
+      - pattern-not-inside: |
+          assert($PTR != NULL)
+          ...

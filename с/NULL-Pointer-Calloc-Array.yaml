@@ -1,0 +1,35 @@
+rules:
+  - id: NULL-Pointer-Calloc-Array
+    metadata:
+      author: Victor 4ernyak
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-476: NULL Pointer Dereference"
+      technology:
+        - c
+        - cpp
+      subcategory:
+        - vuln
+      likelihood: MEDIUM
+      impact: HIGH
+    languages:
+      - c
+      - cpp
+    severity: ERROR
+    message: calloc result used without NULL check (array access)
+    patterns:
+      - pattern: |
+          $PTR = calloc(...);
+          ...
+          $PTR[$INDEX] = ...;
+      - pattern-not-inside: |
+          if ($PTR == NULL) { ... }
+      - pattern-not-inside: |
+          if ($PTR != NULL) { ... }
+      - pattern-not-inside: |
+          if (!$PTR) { ... }
+      - pattern-not-inside: |
+          if ($PTR) { ... }
+      - pattern-not-inside: |
+          assert($PTR != NULL)

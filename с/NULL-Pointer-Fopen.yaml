@@ -1,0 +1,66 @@
+rules:
+  - id: NULL-Pointer-Fopen
+    metadata:
+      author: Victor 4ernyak
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-476: NULL Pointer Dereference"
+      technology:
+        - c
+        - cpp
+      subcategory:
+        - vuln
+      likelihood: MEDIUM
+      impact: HIGH
+    languages:
+      - c
+      - cpp
+    severity: ERROR
+    message: fopen result used without NULL check
+    patterns:
+      - pattern: |
+          $PTR = fopen(...);
+          ...
+      - pattern-either:
+          - pattern: fread($PTR, ...)
+          - pattern: fwrite($PTR, ...)
+          - pattern: fprintf($PTR, ...)
+          - pattern: fscanf($PTR, ...)
+          - pattern: fgetc($PTR)
+          - pattern: fputc($PTR, ...)
+          - pattern: fgets($PTR, ...)
+          - pattern: fputs($PTR, ...)
+          - pattern: fseek($PTR, ...)
+          - pattern: ftell($PTR)
+          - pattern: rewind($PTR)
+          - pattern: fclose($PTR)
+          - pattern: fileno($PTR)
+          - pattern: feof($PTR)
+          - pattern: ferror($PTR)
+          - pattern: clearerr($PTR)
+      - pattern-not-inside: |
+          if ($PTR == NULL) { ... }
+      - pattern-not-inside: |
+          if ($PTR == NULL) { ... }
+          ...
+      - pattern-not-inside: |
+          if ($PTR != NULL) { ... }
+      - pattern-not-inside: |
+          if ($PTR != NULL) { ... }
+          ...
+      - pattern-not-inside: |
+          if (!$PTR) { ... }
+      - pattern-not-inside: |
+          if (!$PTR) { ... }
+          ...
+      - pattern-not-inside: |
+          if ($PTR) { ... }
+      - pattern-not-inside: |
+          if ($PTR) { ... }
+          ...
+      - pattern-not-inside: |
+          assert($PTR != NULL)
+      - pattern-not-inside: |
+          assert($PTR != NULL)
+          ...
