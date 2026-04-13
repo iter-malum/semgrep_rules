@@ -1,0 +1,104 @@
+rules:
+  - id: csharp-404-OS-Command-Injection
+    languages:
+      - csharp
+    severity: CRITICAL
+    message: |
+      The application allows the execution of functions or methods which execute commands in the system with non-sanitized parameters. This action would allow an attacker to inject malicious commands in the server to highly increase the attack vectors by escalating privileges, obtaining or modifying sensitive information stored in the machine.
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - patterns:
+              - pattern: $RETURNTYPE $FUNC(..., $SOURCE, ...) {...}
+              - focus-metavariable: $SOURCE
+          - patterns:
+              - pattern: public $RETURNTYPE $FUNC(..., $SOURCE, ...) {...}
+              - focus-metavariable: $SOURCE
+          - patterns:
+              - pattern: private $RETURNTYPE $FUNC(..., $SOURCE, ...) {...}
+              - focus-metavariable: $SOURCE
+          - patterns:
+              - pattern: protected $RETURNTYPE $FUNC(..., $SOURCE, ...) {...}
+              - focus-metavariable: $SOURCE
+          - patterns:
+              - pattern: internal $RETURNTYPE $FUNC(..., $SOURCE, ...) {...}
+              - focus-metavariable: $SOURCE
+      - pattern-either:
+          - pattern: Request.QueryString[$SOURCE]
+          - pattern: Request.QueryString.Get($SOURCE)
+          - pattern: Request.Form[$SOURCE]
+          - pattern: Request.Form.Get($SOURCE)
+          - pattern: Request.Params[$SOURCE]
+          - pattern: Request[$SOURCE]
+          - pattern: Request.Headers[$SOURCE]
+          - pattern: Request.Cookies[$SOURCE]
+          - pattern: Request.ServerVariables[$SOURCE]
+          - pattern: Request.UserHostAddress
+          - pattern: Request.UserAgent
+          - pattern: Request.UrlReferrer
+          - pattern: Request.RawUrl
+          - pattern: Request.Path
+          - pattern: Request.PathInfo
+          - pattern: Request.Url.Query
+          - pattern: Request.HttpMethod
+      - pattern-either:
+          - pattern: HttpContext.Request.Query[$SOURCE]
+          - pattern: HttpContext.Request.Form[$SOURCE]
+          - pattern: HttpContext.Request.Headers[$SOURCE]
+          - pattern: HttpContext.Request.Cookies[$SOURCE]
+          - pattern: HttpContext.Request.RouteValues[$SOURCE]
+          - pattern: HttpContext.Request.Path
+          - pattern: HttpContext.Request.PathBase
+          - pattern: HttpContext.Request.QueryString
+          - pattern: HttpContext.Request.Body
+          - pattern: HttpContext.Connection.RemoteIpAddress
+    pattern-sinks:
+      - pattern: System.Diagnostics.Process.Start(...)
+      - pattern: Process.Start(...)
+      - patterns:
+        - pattern-either:
+          - pattern-inside: using (Process $PROCESS = new Process()){ ... }
+          - pattern-inside: Process $PROCESS = new Process(); ...
+        - pattern-either:
+          - pattern: $PROCESS.StartInfo.FileName = ...
+          - pattern: $PROCESS.StartInfo.Arguments = ...
+
+      - patterns:
+        - pattern-either:
+            - pattern-inside: using (ProcessStartInfo $PSI = new ProcessStartInfo()){ ... }
+            - pattern-inside: ProcessStartInfo $PSI = new ProcessStartInfo(); ...
+        - pattern-either:
+          - pattern: $PSI.FileName = ...
+          - pattern: $PSI.Arguments = ...
+
+      - pattern-either:
+          - patterns:
+              - pattern-inside: using (var $FOO =
+                  System.Management.Automation.PowerShell.Create()){...}
+              - pattern: $FOO.AddScript(...)
+      - pattern: System.Management.Automation.PowerShell.Create().AddScript(...)
+      - pattern: System.Management.Automation.PowerShell.Create().AddScript(...).Invoke(...)
+      - pattern: System.Management.Automation.PowerShell.Create().AddScript(...).AddCommand(...)
+      - pattern: System.Management.Automation.PowerShell.Invoke(...)
+      - patterns:
+          - pattern-inside: $OBJTYPE $FOO = new RunspaceInvoke(); ...
+          - pattern: $FOO.Invoke(...);
+      - pattern: new ProcessExecutor(...).start(...)
+      - patterns:
+          - pattern: $STR + $SINK
+          - metavariable-regex:
+              metavariable: $STR
+              regex: .*xp_cmdshell.*
+          - focus-metavariable: $SINK
+    metadata:
+      category: security
+      subcategory:
+        - vuln
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS
+          Command ('OS Command Injection')"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      owasp:
+        - A3:2021 Injection

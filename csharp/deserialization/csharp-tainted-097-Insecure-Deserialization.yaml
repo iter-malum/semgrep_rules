@@ -1,0 +1,77 @@
+rules:
+  - id: csharp-tainted-097-Insecure-Deserialization
+    languages:
+      - csharp
+    severity: HIGH
+    message: >
+      The system deserializes objects without first validating their content nor
+      casting them to a specific type.
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: Request.Body
+          - pattern: Request.Cookies
+      - patterns:
+          - pattern: $RETURNTYPE $FOO(..., $SOURCE, ...){ ... }
+          - focus-metavariable: $SOURCE
+
+    pattern-sinks:
+      - patterns: 
+        - pattern-inside: |
+            var $BF = new BinaryFormatter();
+            ...
+        - pattern: $BF.Deserialize(...);
+
+      - patterns:
+        - pattern-inside: |
+            var $SERIALIZER = new NetDataContractSerializer();
+            ...
+        - pattern: $SERIALIZER.Deserialize(...)
+
+      - patterns: 
+        - pattern-inside: |
+            var $FORMATTER = new LosFormatter();
+            ...
+        - pattern: |
+            $FORMATTER.Deserialize(...)
+
+      - patterns:
+        - pattern-inside: |
+            var $FORMATTER = new SoapFormatter();
+            ...
+        - pattern: $FORMATTER.Deserialize(...)
+
+      - patterns:
+        - pattern-inside: |
+            var $SERIALIZER = new JavaScriptSerializer(new SimpleTypeResolver());
+            ...
+        - pattern: $SERIALIZER.Deserialize(...)
+
+      - patterns:
+        - pattern-inside: |
+            var $SERIALIZER = new DataContractSerializer(typeof(object));
+            ...
+        - pattern: $SERIALIZER.ReadObject(...)
+
+      - patterns:
+        - pattern-inside: |
+            var $SERIALIZER = new XmlSerializer(...);
+
+      - patterns: 
+          - pattern-inside: |
+              var $SETTINGS = new JsonSerializerSettings{ TypeNameHandling = TypeNameHandling.All};
+              ...
+          - pattern: JsonConvert.DeserializeObject(..., $SETTINGS);
+
+
+    metadata:
+      category: security
+      subcategory:
+        - vuln
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: HIGH
+      owasp:
+        - A8:2017 Insecure Deserialization
