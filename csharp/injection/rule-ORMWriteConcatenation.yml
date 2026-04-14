@@ -39,101 +39,49 @@ rules:
     - patterns:
         - pattern-either:
             # EF Core
-            - patterns:
-                - pattern: |
-                    $X.Database.ExecuteSqlRaw($ARG, ...)
-                - focus-metavariable: $ARG
-            - patterns:
-                - pattern: |
-                    $X.Database.ExecuteSqlRawAsync($ARG, ...)
-                - focus-metavariable: $ARG
-            - patterns:
-                - pattern: |
-                    $X.Database.ExecuteSqlInterpolated($ARG, ...)
-                - focus-metavariable: $ARG
-            - patterns:
-                - pattern: |
-                    $X.Database.ExecuteSqlInterpolatedAsync($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper Execute
-            - patterns:
-                - pattern: |
-                    $X.Execute($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper ExecuteAsync
-            - patterns:
-                - pattern: |
-                    $X.ExecuteAsync($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper Query
-            - patterns:
-                - pattern: |
-                    $X.Query($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper QueryFirst
-            - patterns:
-                - pattern: |
-                    $X.QueryFirst($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper QueryFirstOrDefault
-            - patterns:
-                - pattern: |
-                    $X.QueryFirstOrDefault($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper QuerySingle
-            - patterns:
-                - pattern: |
-                    $X.QuerySingle($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper QuerySingleOrDefault
-            - patterns:
-                - pattern: |
-                    $X.QuerySingleOrDefault($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper QueryMultiple
-            - patterns:
-                - pattern: |
-                    $X.QueryMultiple($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper ExecuteScalar
-            - patterns:
-                - pattern: |
-                    $X.ExecuteScalar($ARG, ...)
-                - focus-metavariable: $ARG
-            # Dapper ExecuteReader
-            - patterns:
-                - pattern: |
-                    $X.ExecuteReader($ARG, ...)
-                - focus-metavariable: $ARG
+            - pattern: $X.Database.ExecuteSqlRaw($ARG, ...)
+            - pattern: $X.Database.ExecuteSqlRawAsync($ARG, ...)
+            - pattern: $X.Database.ExecuteSqlInterpolated($ARG, ...)
+            - pattern: $X.Database.ExecuteSqlInterpolatedAsync($ARG, ...)
+            # Dapper
+            - pattern: $X.Execute($ARG, ...)
+            - pattern: $X.ExecuteAsync($ARG, ...)
+            - pattern: $X.Query($ARG, ...)
+            - pattern: $X.QueryFirst($ARG, ...)
+            - pattern: $X.QueryFirstOrDefault($ARG, ...)
+            - pattern: $X.QuerySingle($ARG, ...)
+            - pattern: $X.QuerySingleOrDefault($ARG, ...)
+            - pattern: $X.QueryMultiple($ARG, ...)
+            - pattern: $X.ExecuteScalar($ARG, ...)
+            - pattern: $X.ExecuteReader($ARG, ...)
             # NHibernate
-            - patterns:
-                - pattern: |
-                    $X.CreateSQLQuery($ARG)
-                - focus-metavariable: $ARG
-            - patterns:
-                - pattern: |
-                    $X.CreateSQLQuery($ARG).ExecuteUpdate()
-                - focus-metavariable: $ARG
-            - patterns:
-                - pattern: |
-                    $X.CreateNativeQuery($ARG)
-                - focus-metavariable: $ARG
+            - pattern: $X.CreateSQLQuery($ARG)
+            - pattern: $X.CreateSQLQuery($ARG).ExecuteUpdate()
+            - pattern: $X.CreateNativeQuery($ARG)
+        - focus-metavariable: $ARG
   
   pattern-sanitizers:
-    - pattern-either:
-        - pattern: |
-            $X.Execute($ARG, $PARAM)
-        - pattern: |
-            $X.ExecuteAsync($ARG, $PARAM)
-        - pattern: |
-            $X.Query($ARG, $PARAM)
-        - pattern: |
-            $X.ExecuteSqlRaw($ARG, $PARAM)
-        - pattern: |
-            $X.ExecuteSqlInterpolated($"...")
-        - pattern: |
-            $X.CreateSQLQuery($ARG).SetParameter($NAME, $VALUE)
-      by-side-effect: true
+    - pattern: $X.Execute($ARG, $PARAM)
+    - pattern: $X.ExecuteAsync($ARG, $PARAM)
+    - pattern: $X.Query($ARG, $PARAM)
+    - pattern: $X.ExecuteSqlRaw($ARG, $PARAM)
+    - pattern: $X.ExecuteSqlInterpolated($"...")
+    - pattern: $X.CreateSQLQuery($ARG).SetParameter($NAME, $VALUE)
+    # Исключения для LDAP
+    - pattern: LdapConnection.Search(...)
+    - pattern: $X.BuildSearchQueue(...)
+    - pattern: $X.FindAll(...)
+    - pattern: $X.SearchSingle(...)
+    - pattern: LdapConnection.Connect(...)
+    - pattern: $X.RetryPolicy.Execute(...)
+    - pattern: $X.Dispose(...)
+    - pattern: $X.Connect(...)
+    - pattern: $X.GetMainGroupDistinguishedName(...)
+    - pattern: $X.GetResponse(...)
+    - pattern: $X.Bind(...)
+    - pattern: new LdapConnection()
+    - pattern: LdapConnection.DefaultPort
+    by-side-effect: true
   
   message: "Обнаружено опасное использование ORM методов с динамически формируемыми SQL запросами. Методы ExecuteSqlRaw, ExecuteSqlInterpolated (EF Core), Execute, Query (Dapper), CreateSQLQuery (NHibernate) для модификации данных становятся уязвимыми для SQL инъекции, если в них передается динамически сформированная строка с пользовательским вводом. Исправление: всегда используйте параметризованные запросы."
   

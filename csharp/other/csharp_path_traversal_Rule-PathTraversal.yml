@@ -86,7 +86,67 @@ rules:
                 - pattern: System.IO.File.ReadAllText($RESULT)
                 - pattern: File.ReadAllText($RESULT)
     
-    # Exclude cases where Path.GetFileName is used (sanitizer)
+    # ============================================================
+    # ИСКЛЮЧЕНИЯ - безопасные источники
+    # ============================================================
+    
+    # Исключение: Конфигурационные настройки (_settings, _fsSettings, Configuration)
+    - pattern-not-inside: |
+        $SETTINGS.$PROPERTY
+        ...
+        Directory.Exists($SETTINGS.$PROPERTY)
+    
+    - pattern-not-inside: |
+        $SETTINGS.$PROPERTY
+        ...
+        Directory.CreateDirectory($SETTINGS.$PROPERTY)
+    
+    # Исключение: Пути из веб-окружения (WebRootPath, ContentRootPath, CurrentDirectory)
+    - pattern-not-inside: |
+        $ENV.$PROPERTY
+        ...
+        Directory.Exists($ENV.$PROPERTY)
+    
+    - pattern-not-inside: |
+        $ENV.$PROPERTY
+        ...
+        Directory.CreateDirectory($ENV.$PROPERTY)
+    
+    # Исключение: Path.Combine с безопасными компонентами
+    - pattern-not-inside: |
+        Path.Combine($SAFE, $INPUT)
+        ...
+        Directory.Exists($RESULT)
+    
+    # Исключение: Проверка на null с последующим присвоением безопасного значения
+    - pattern-not-inside: |
+        if (null == $VAR)
+        {
+            $VAR = $SAFE_VALUE;
+        }
+        ...
+        Directory.Exists($VAR)
+    
+    - pattern-not-inside: |
+        if ($VAR == null)
+        {
+            $VAR = $SAFE_VALUE;
+        }
+        ...
+        Directory.CreateDirectory($VAR)
+    
+    # Исключение: Переменные, которые явно инициализированы безопасными значениями
+    - pattern-not-inside: |
+        $VAR = $SAFE_VALUE;
+        ...
+        Directory.Exists($VAR)
+    
+    - pattern-not-inside: |
+        $VAR = $SAFE_VALUE;
+        ...
+        Directory.CreateDirectory($VAR)
+    
+    # Исключение: Path.GetFileName sanitizer
     - pattern-not-inside: |
         Path.GetFileName($INPUT)
         ...
@@ -102,10 +162,31 @@ rules:
         ...
         File.Delete($PATH)
     
-    # Exclude cases with validation
+    # Исключение: Валидация через if
     - pattern-not-inside: |
         if ($CONDITION) {
             ...
         }
         ...
         PhysicalFile($PATH, ...)
+    
+    # Исключение: Переменные из конфигурации (GetSection, Bind)
+    - pattern-not-inside: |
+        config.GetSection(...).Bind($SETTINGS);
+        ...
+        Directory.Exists($SETTINGS.$PROPERTY)
+    
+    - pattern-not-inside: |
+        config.GetValue<$TYPE>($KEY)
+        ...
+        Directory.Exists($VALUE)
+    
+    # Исключение: hostingEnvironment.WebRootPath и подобные
+    - metavariable-regex:
+        metavariable: $VAR
+        regex: '(?i)(webRootPath|contentRootPath|currentDirectory|environment\.currentdirectory|appdomain\.currentdomain\.basedirectory)'
+    
+    # Исключение: Имена переменных, указывающие на конфигурацию
+    - metavariable-regex:
+        metavariable: $VAR
+        regex: '(?i)(_settings|_fsSettings|_config|settings|configuration|options)'
