@@ -62,26 +62,44 @@ rules:
   
   pattern-sanitizers:
     - pattern: $X.Execute($ARG, $PARAM)
+      by-side-effect: true
     - pattern: $X.ExecuteAsync($ARG, $PARAM)
+      by-side-effect: true
     - pattern: $X.Query($ARG, $PARAM)
+      by-side-effect: true
     - pattern: $X.ExecuteSqlRaw($ARG, $PARAM)
+      by-side-effect: true
     - pattern: $X.ExecuteSqlInterpolated($"...")
+      by-side-effect: true
     - pattern: $X.CreateSQLQuery($ARG).SetParameter($NAME, $VALUE)
+      by-side-effect: true
     # Исключения для LDAP
     - pattern: LdapConnection.Search(...)
+      by-side-effect: true
     - pattern: $X.BuildSearchQueue(...)
+      by-side-effect: true
     - pattern: $X.FindAll(...)
+      by-side-effect: true
     - pattern: $X.SearchSingle(...)
+      by-side-effect: true
     - pattern: LdapConnection.Connect(...)
+      by-side-effect: true
     - pattern: $X.RetryPolicy.Execute(...)
+      by-side-effect: true
     - pattern: $X.Dispose(...)
+      by-side-effect: true
     - pattern: $X.Connect(...)
+      by-side-effect: true
     - pattern: $X.GetMainGroupDistinguishedName(...)
+      by-side-effect: true
     - pattern: $X.GetResponse(...)
+      by-side-effect: true
     - pattern: $X.Bind(...)
+      by-side-effect: true
     - pattern: new LdapConnection()
+      by-side-effect: true
     - pattern: LdapConnection.DefaultPort
-    by-side-effect: true
+      by-side-effect: true
   
   message: "Обнаружено опасное использование ORM методов с динамически формируемыми SQL запросами. Методы ExecuteSqlRaw, ExecuteSqlInterpolated (EF Core), Execute, Query (Dapper), CreateSQLQuery (NHibernate) для модификации данных становятся уязвимыми для SQL инъекции, если в них передается динамически сформированная строка с пользовательским вводом. Исправление: всегда используйте параметризованные запросы."
   
